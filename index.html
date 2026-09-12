@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Secure Vault - Mobile Responsive</title>
+    <title>SecureVault - Private Orbit</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Supabase JS CDN -->
@@ -13,9 +13,9 @@
             theme: {
                 extend: {
                     colors: {
-                        darkBg: '#090d16',
-                        cardBg: '#131c31',
-                        accent: '#3b82f6'
+                        darkBg: '#070a12',
+                        cardBg: '#111827',
+                        accent: '#22d3ee'
                     },
                     keyframes: {
                         shake: {
@@ -37,8 +37,128 @@
         }
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --night: #070a12;
+            --ink: #0d1322;
+            --panel: rgba(17, 24, 39, 0.84);
+            --line: rgba(125, 211, 252, 0.16);
+            --cyan: #22d3ee;
+            --violet: #a78bfa;
+            --amber: #fbbf24;
+        }
+
+        html {
+            background: var(--night);
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: var(--night) !important;
+            background-image:
+                radial-gradient(circle at 14% 18%, rgba(34, 211, 238, 0.10) 0 1px, transparent 2px),
+                radial-gradient(circle at 82% 12%, rgba(167, 139, 250, 0.12) 0 1px, transparent 2px),
+                radial-gradient(circle at 67% 72%, rgba(251, 191, 36, 0.10) 0 1px, transparent 2px),
+                radial-gradient(circle at 28% 84%, rgba(34, 211, 238, 0.08) 0 1px, transparent 2px),
+                linear-gradient(135deg, #070a12 0%, #0b1020 48%, #090b16 100%);
+            background-size: 173px 149px, 211px 191px, 239px 227px, 197px 181px, auto;
+        }
+
+        #authScreen {
+            background: rgba(7, 10, 18, 0.88) !important;
+            background-image: radial-gradient(ellipse at center, rgba(34, 211, 238, 0.08), transparent 55%) !important;
+        }
+
+        .bg-cardBg,
+        .bg-cardBg\/80,
+        .bg-cardBg\/90,
+        .bg-cardBg\/95,
+        .bg-cardBg\/98 {
+            background-color: var(--panel) !important;
+            border-color: var(--line) !important;
+        }
+
+        .border-slate-800,
+        .border-slate-700\/50,
+        .border-slate-700\/30 {
+            border-color: var(--line) !important;
+        }
+
+        .bg-accent\/10,
+        .bg-accent\/20 {
+            background-color: rgba(34, 211, 238, 0.14) !important;
+        }
+
+        .bg-accent {
+            background-color: var(--cyan) !important;
+            color: #071018 !important;
+        }
+
+        .text-accent {
+            color: var(--cyan) !important;
+        }
+
+        .hover\\:bg-blue-600:hover {
+            background-color: #67e8f9 !important;
+        }
+
+        button,
+        a,
+        input,
+        .file-card {
+            transition-duration: 180ms;
+        }
+
+        input:focus {
+            box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.12);
+        }
+
+        h1, h2, h3, h4, button, nav {
+            letter-spacing: 0.01em;
+        }
+        #welcomeGreeting::before {
+            content: '✦';
+            color: var(--amber);
+            font-size: 0.7em;
+            margin-right: 0.55rem;
+            vertical-align: 0.12em;
+        }
+
+        #storageProgressBar {
+            background: linear-gradient(90deg, var(--cyan), var(--violet)) !important;
+            box-shadow: 0 0 14px rgba(34, 211, 238, 0.45);
+        }
+
+        #audioPlayerBar {
+            background: rgba(13, 19, 34, 0.94) !important;
+            border-color: rgba(34, 211, 238, 0.24) !important;
+            box-shadow: 0 -12px 35px rgba(0, 0, 0, 0.28), 0 -1px 0 rgba(34, 211, 238, 0.12);
+        }
+
+        #lockModalBox,
+        #fileViewerModal > div,
+        #pdfModal > div,
+        #detailsModal > div,
+        #authScreen > div {
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.48), 0 0 0 1px rgba(34, 211, 238, 0.06);
+        }
+
+        @media (min-width: 768px) {
+            main {
+                background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.018), transparent);
+            }
+        }
+
+
+
+
+
+    </style>
 </head>
-<body class="bg-darkBg text-white font-sans antialiased min-h-screen flex flex-col pb-28 md:pb-12 overflow-x-hidden">
+<body class="bg-darkBg text-white font-sans antialiased min-h-screen flex flex-col pb-40 md:pb-12 overflow-x-hidden">
 
     <!-- ================= 1. AUTH SCREEN ================= -->
     <div id="authScreen" class="fixed inset-0 bg-darkBg z-50 flex flex-col items-center justify-center p-4">
@@ -133,6 +253,9 @@
                     <p id="userEmailDisplay" class="text-xs text-slate-400 truncate max-w-[180px] sm:max-w-xs"></p>
                 </div>
                 <div class="flex items-center gap-3">
+                    <button id="themeToggleBtn" onclick="toggleTheme()" title="Switch to light theme" aria-label="Switch to light theme" class="bg-slate-800/80 hover:bg-cyan-400/15 px-3 py-2 rounded-xl text-amber-300 text-xs font-semibold transition cursor-pointer border border-slate-700/50">
+                        <i id="themeToggleIcon" class="fa-solid fa-sun"></i>
+                    </button>
                     <button onclick="logoutUser()" title="Logout" class="bg-slate-800/80 hover:bg-red-500/20 hover:text-red-400 px-3.5 py-2 rounded-xl text-slate-300 text-xs font-semibold flex items-center gap-2 transition cursor-pointer border border-slate-700/50">
                         <i class="fa-solid fa-right-from-bracket"></i> <span class="hidden sm:inline">Logout</span>
                     </button>
@@ -241,6 +364,19 @@
         </div>
     </div>
 
+    <!-- Generic File Viewer Modal -->
+    <div id="fileViewerModal" class="fixed inset-0 bg-black/95 backdrop-blur-sm hidden z-50 flex flex-col items-center justify-center p-2 sm:p-6">
+        <div class="w-full max-w-4xl h-full max-h-[90vh] flex flex-col bg-cardBg rounded-2xl border border-slate-800 overflow-hidden shadow-2xl animate-pop">
+            <div class="flex justify-between items-center p-4 border-b border-slate-800 bg-slate-900/90">
+                <h3 id="modalFileName" class="font-semibold text-xs sm:text-sm truncate max-w-[200px] sm:max-w-md">File Preview</h3>
+                <button onclick="closeFileViewerModal()" class="text-slate-400 hover:text-white px-3 py-1.5 rounded-xl bg-slate-800 cursor-pointer text-xs font-medium">
+                    <i class="fa-solid fa-xmark mr-1"></i> Close
+                </button>
+            </div>
+            <iframe id="modalFileFrame" class="w-full flex-1 bg-slate-950" title="File preview"></iframe>
+        </div>
+    </div>
+
     <!-- File Details Modal -->
     <div id="detailsModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
         <div class="bg-cardBg/95 backdrop-blur-xl border border-slate-800 p-5 sm:p-6 rounded-3xl w-full max-w-md flex flex-col gap-4 shadow-2xl animate-pop">
@@ -318,20 +454,20 @@
 
 
     <!-- ================= 4. AUDIO PLAYER ================= -->
-    <div id="audioPlayerBar" class="fixed bottom-16 md:bottom-0 left-0 right-0 bg-cardBg/95 backdrop-blur-md border-t border-slate-800 p-3 sm:p-4 hidden z-30 flex items-center justify-between shadow-2xl">
-        <div class="flex items-center gap-3">
+    <div id="audioPlayerBar" class="fixed bottom-16 md:bottom-0 left-0 right-0 bg-cardBg/98 backdrop-blur-md border-t border-slate-800 p-3 sm:p-4 hidden z-50 flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-2xl">
+        <div class="flex items-center gap-3 min-w-0">
             <div class="w-10 h-10 sm:w-12 sm:h-12 bg-green-500/10 text-green-400 rounded-xl flex items-center justify-center text-lg sm:text-xl shadow-inner">
                 <i class="fa-solid fa-music"></i>
             </div>
-            <div>
-                <h4 id="nowPlayingTitle" class="text-xs sm:text-sm font-semibold truncate max-w-[120px] sm:max-w-xs">Song Name</h4>
+            <div class="min-w-0">
+                <h4 id="nowPlayingTitle" class="text-xs sm:text-sm font-semibold truncate max-w-[calc(100vw-100px)] sm:max-w-xs">Song Name</h4>
                 <p class="text-[10px] sm:text-xs text-slate-400">Audio Stream</p>
             </div>
         </div>
 
-        <div class="flex items-center gap-2 sm:gap-4">
-            <audio id="audioElement" controls class="h-8 sm:h-10 w-28 sm:w-auto outline-none"></audio>
-            <button onclick="closeAudioPlayer()" class="text-slate-400 hover:text-white px-2 py-1 text-sm font-semibold cursor-pointer">
+        <div class="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
+            <audio id="audioElement" controls class="h-9 sm:h-10 w-full sm:w-auto sm:min-w-[260px] outline-none"></audio>
+            <button onclick="closeAudioPlayer()" title="Close audio player" class="text-slate-400 hover:text-white px-2 py-1 text-sm font-semibold cursor-pointer shrink-0">
                 <i class="fa-solid fa-xmark text-lg"></i>
             </button>
         </div>
@@ -344,16 +480,134 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5YWFvZ296ZGFydnJxa2lwc2JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkxMzI3MjUsImV4cCI6MjEwNDcwODcyNX0.YGP75kQRGM1-STkjgPlv5q-GZKOfeEN_d8PAZRNnDaA';
         const BUCKET_NAME = 'vault-files';
         const MAX_STORAGE_MB = 2048;
+        const ENCRYPTION_MAGIC = new TextEncoder().encode('SV2');
+        const LEGACY_ENCRYPTION_MAGIC = new TextEncoder().encode('SV1');
+        const PBKDF2_ITERATIONS = 100000;
+        const LEGACY_PBKDF2_ITERATIONS = 250000;
 
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let isSignupMode = false;
         let currentUserId = null;
 
-        let activeLockAction = null;
+        let activeLockAction = null; 
         let targetFileNameForLock = null;
         let currentLockPinInput = "";
-        let pendingFileToOpen = null;
+        let isFileLockProcessing = false;
+        
+        // Direct execution states
+        let pendingCategory = null;
+        let pendingUrl = null;
+        let pendingDisplayName = null;
+        let activePreviewObjectUrl = null;
+
+        function applyTheme(theme) {
+            const isLight = theme === "light";
+            document.body.classList.toggle("theme-light", isLight);
+            const icon = document.getElementById("themeToggleIcon");
+            const button = document.getElementById("themeToggleBtn");
+            if (!icon || !button) return;
+            icon.className = isLight ? "fa-solid fa-moon" : "fa-solid fa-sun";
+            button.title = isLight ? "Switch to dark theme" : "Switch to light theme";
+            button.setAttribute("aria-label", button.title);
+        }
+
+        function toggleTheme() {
+            const nextTheme = document.body.classList.contains("theme-light") ? "dark" : "light";
+            localStorage.setItem("securevault_theme", nextTheme);
+            applyTheme(nextTheme);
+        }
+
+        applyTheme(localStorage.getItem("securevault_theme") || "dark");
+
+        function deriveFileKey(pin, salt, iterations = PBKDF2_ITERATIONS) {
+            return crypto.subtle.importKey(
+                "raw",
+                new TextEncoder().encode(pin),
+                "PBKDF2",
+                false,
+                ["deriveKey"]
+            ).then(material => crypto.subtle.deriveKey(
+                { name: "PBKDF2", salt, iterations, hash: "SHA-256" },
+                material,
+                { name: "AES-GCM", length: 256 },
+                false,
+                ["encrypt", "decrypt"]
+            ));
+        }
+
+        async function encryptFileBlob(fileBlob, pin) {
+            const salt = crypto.getRandomValues(new Uint8Array(16));
+            const iv = crypto.getRandomValues(new Uint8Array(12));
+            const key = await deriveFileKey(pin, salt);
+            const ciphertext = new Uint8Array(await crypto.subtle.encrypt(
+                { name: "AES-GCM", iv },
+                key,
+                await fileBlob.arrayBuffer()
+            ));
+
+            return new Blob([ENCRYPTION_MAGIC, salt, iv, ciphertext], {
+                type: "application/octet-stream"
+            });
+        }
+
+        async function decryptFileBlob(encryptedBlob, pin, mimeType) {
+            const bytes = new Uint8Array(await encryptedBlob.arrayBuffer());
+            const isLegacy = isLegacyEncryptedBlob(bytes);
+            if (bytes.length < ENCRYPTION_MAGIC.length + 16 + 12 + 16 || !isAnyEncryptedBlob(bytes)) {
+                throw new Error("This file is not a valid encrypted SecureVault file.");
+            }
+
+            const magicLength = isLegacy ? LEGACY_ENCRYPTION_MAGIC.length : ENCRYPTION_MAGIC.length;
+            const saltStart = magicLength;
+            const ivStart = saltStart + 16;
+            const ciphertextStart = ivStart + 12;
+            const key = await deriveFileKey(
+                pin,
+                bytes.slice(saltStart, ivStart),
+                isLegacy ? LEGACY_PBKDF2_ITERATIONS : PBKDF2_ITERATIONS
+            );
+            const plaintext = await crypto.subtle.decrypt(
+                { name: "AES-GCM", iv: bytes.slice(ivStart, ciphertextStart) },
+                key,
+                bytes.slice(ciphertextStart)
+            );
+
+            return new Blob([plaintext], { type: mimeType || "application/octet-stream" });
+        }
+
+        function isEncryptedBlob(bytes) {
+            return ENCRYPTION_MAGIC.every((byte, index) => bytes[index] === byte);
+        }
+
+        function isLegacyEncryptedBlob(bytes) {
+            return LEGACY_ENCRYPTION_MAGIC.every((byte, index) => bytes[index] === byte);
+        }
+
+        function isAnyEncryptedBlob(bytes) {
+            return isEncryptedBlob(bytes) || isLegacyEncryptedBlob(bytes);
+        }
+
+        function fileMimeType(fileName) {
+            const extension = fileName.toLowerCase().split('.').pop();
+            const mimeTypes = {
+                jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", gif: "image/gif",
+                pdf: "application/pdf", mp3: "audio/mpeg", wav: "audio/wav", ogg: "audio/ogg", m4a: "audio/mp4"
+            };
+            return mimeTypes[extension] || "application/octet-stream";
+        }
+
+        async function downloadStoredFile(fileName) {
+            return supabaseClient.storage.from(BUCKET_NAME).download(`${currentUserId}/${fileName}`);
+        }
+
+        async function replaceStoredFile(fileName, blob) {
+            return supabaseClient.storage.from(BUCKET_NAME).update(
+                `${currentUserId}/${fileName}`,
+                blob,
+                { contentType: blob.type || "application/octet-stream", upsert: false }
+            );
+        }
 
         window.addEventListener("DOMContentLoaded", async () => {
             const { data: { session } } = await supabaseClient.auth.getSession();
@@ -471,6 +725,7 @@
             closeAudioPlayer();
             closeImageModal();
             closePdfModal();
+            closeFileViewerModal();
             closeDetailsModal();
             closeFileLockModal();
         }
@@ -525,6 +780,10 @@
         const modalPdfFrame = document.getElementById("modalPdfFrame");
         const modalPdfName = document.getElementById("modalPdfName");
 
+        const fileViewerModal = document.getElementById("fileViewerModal");
+        const modalFileFrame = document.getElementById("modalFileFrame");
+        const modalFileName = document.getElementById("modalFileName");
+
         const detailsModal = document.getElementById("detailsModal");
         const detailFileName = document.getElementById("detailFileName");
         const detailFileSize = document.getElementById("detailFileSize");
@@ -573,10 +832,8 @@
             data.forEach((file) => {
                 if(file.name === ".emptyFolderPlaceholder") return;
                 const filePath = `${currentUserId}/${file.name}`;
-                const { data: publicURLData } = supabaseClient.storage.from(BUCKET_NAME).getPublicUrl(filePath);
-                
                 const isLocked = !!lockedFilesMap[file.name];
-                renderFileCard(file.name, publicURLData.publicUrl, file.metadata, file.created_at, isLocked);
+                renderFileCard(file.name, null, file.metadata, file.created_at, isLocked);
             });
         }
 
@@ -635,7 +892,7 @@
                 ${isLocked ? '<div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center text-yellow-400 text-xl"><i class="fa-solid fa-lock"></i></div>' : ''}
             </div>`;
 
-            if (fileTypeCategory === "image") {
+            if (fileTypeCategory === "image" && fileURL) {
                 previewContent = `<div class="h-28 sm:h-32 bg-slate-900 rounded-xl overflow-hidden flex items-center justify-center relative">
                     <img src="${fileURL}" class="w-full h-full object-cover ${isLocked ? 'blur-lg scale-105' : ''}">
                     ${isLocked ? '<div class="absolute inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center text-yellow-400 text-xl"><i class="fa-solid fa-lock"></i></div>' : ''}
@@ -666,33 +923,55 @@
                 if (isLocked) {
                     targetFileNameForLock = name;
                     activeLockAction = 'unlock';
-                    pendingFileToOpen = () => executeFileOpen(fileTypeCategory, fileURL, cleanDisplayName);
+                    pendingCategory = fileTypeCategory;
+                    pendingUrl = null;
+                    pendingDisplayName = cleanDisplayName;
                     openFileLockModal("Unlock Protected File", "Enter PIN to view file");
                 } else {
-                    executeFileOpen(fileTypeCategory, fileURL, cleanDisplayName);
+                    executeFileOpen(fileTypeCategory, fileURL, cleanDisplayName, name);
                 }
             });
 
             fileGrid.appendChild(fileCard);
         }
 
-        function executeFileOpen(category, url, name) {
+        async function executeFileOpen(category, url, name, fileName) {
+            let objectUrl = url;
+            if (!objectUrl) {
+                const { data, error } = await downloadStoredFile(fileName);
+                if (error) {
+                    alert("Unable to open file: " + error.message);
+                    return;
+                }
+                objectUrl = URL.createObjectURL(data);
+            }
+
+            activePreviewObjectUrl = objectUrl;
             if (category === "image") {
-                modalImage.src = url;
+                modalImage.src = objectUrl;
                 modalImageName.innerText = name;
                 imageModal.classList.remove("hidden");
             } else if (category === "pdf") {
-                modalPdfFrame.src = url;
+                modalPdfFrame.src = objectUrl;
                 modalPdfName.innerText = name;
                 pdfModal.classList.remove("hidden");
             } else if (category === "audio") {
                 nowPlayingTitle.innerText = name;
-                audioElement.src = url;
+                audioElement.src = objectUrl;
                 audioElement.load();
                 audioElement.play().catch(err => console.log(err));
                 audioPlayerBar.classList.remove("hidden");
             } else {
-                window.open(url, '_blank');
+                modalFileFrame.src = objectUrl;
+                modalFileName.innerText = name;
+                fileViewerModal.classList.remove("hidden");
+            }
+        }
+
+        function releasePreviewObjectUrl() {
+            if (activePreviewObjectUrl) {
+                URL.revokeObjectURL(activePreviewObjectUrl);
+                activePreviewObjectUrl = null;
             }
         }
 
@@ -721,24 +1000,29 @@
         function closeFileLockModal() {
             document.getElementById("fileLockModal").classList.add("hidden");
             currentLockPinInput = "";
+            isFileLockProcessing = false;
             targetFileNameForLock = null;
             activeLockAction = null;
-            pendingFileToOpen = null;
+            pendingCategory = null;
+            pendingUrl = null;
+            pendingDisplayName = null;
         }
 
         function pressFileLockKey(digit) {
-            if (currentLockPinInput.length < 4) {
+            if (!isFileLockProcessing && currentLockPinInput.length < 4) {
                 currentLockPinInput += digit;
                 updateLockDots();
 
                 if (currentLockPinInput.length === 4) {
-                    setTimeout(processFileLockAction, 150);
+                    setTimeout(() => {
+                        processFileLockAction();
+                    }, 200);
                 }
             }
         }
 
         function deleteFileLockKey() {
-            if (currentLockPinInput.length > 0) {
+            if (!isFileLockProcessing && currentLockPinInput.length > 0) {
                 currentLockPinInput = currentLockPinInput.slice(0, -1);
                 updateLockDots();
             }
@@ -755,39 +1039,126 @@
             }
         }
 
-        function processFileLockAction() {
+        async function processFileLockAction() {
+            if (isFileLockProcessing) return;
+            isFileLockProcessing = true;
             const lockedFilesMap = JSON.parse(localStorage.getItem(`locked_files_${currentUserId}`) || "{}");
             const errorElement = document.getElementById("lockModalError");
             const box = document.getElementById("lockModalBox");
+            const subtitleElement = document.getElementById("lockModalSub");
+            const fileName = targetFileNameForLock;
+            const pin = currentLockPinInput;
+            subtitleElement.innerText = activeLockAction === 'create' ? "Encrypting file securely..." : "Checking PIN securely...";
 
             if (activeLockAction === 'create') {
-                lockedFilesMap[targetFileNameForLock] = currentLockPinInput;
-                localStorage.setItem(`locked_files_${currentUserId}`, JSON.stringify(lockedFilesMap));
-                closeFileLockModal();
-                fetchSupabaseFiles();
+                try {
+                    const { data: originalBlob, error: downloadError } = await downloadStoredFile(fileName);
+                    if (downloadError) throw downloadError;
+                    const encryptedBlob = await encryptFileBlob(originalBlob, pin);
+                    const { error: uploadError } = await replaceStoredFile(fileName, encryptedBlob);
+                    if (uploadError) throw uploadError;
+                    lockedFilesMap[fileName] = { encrypted: true };
+                    localStorage.setItem(`locked_files_${currentUserId}`, JSON.stringify(lockedFilesMap));
+                    closeFileLockModal();
+                    fetchSupabaseFiles();
+                } catch (error) {
+                    errorElement.innerText = error.message || "Unable to encrypt this file.";
+                    console.error("File encryption failed:", error);
+                    subtitleElement.innerText = "Try again or cancel";
+                    isFileLockProcessing = false;
+                }
             } else if (activeLockAction === 'remove' || activeLockAction === 'unlock') {
-                const correctPin = lockedFilesMap[targetFileNameForLock];
-                if (currentLockPinInput === correctPin) {
-                    if (activeLockAction === 'remove') {
-                        delete lockedFilesMap[targetFileNameForLock];
-                        localStorage.setItem(`locked_files_${currentUserId}`, JSON.stringify(lockedFilesMap));
-                        closeFileLockModal();
-                        fetchSupabaseFiles();
-                    } else {
-                        closeFileLockModal();
-                        if (pendingFileToOpen) {
-                            pendingFileToOpen();
-                            pendingFileToOpen = null;
-                        }
-                    }
-                } else {
+                const lockRecord = lockedFilesMap[fileName];
+                const isLegacyLock = typeof lockRecord === "string";
+
+                if (!lockRecord || (isLegacyLock && pin !== lockRecord)) {
                     box.classList.add("animate-shake");
                     errorElement.innerText = "Incorrect PIN!";
+                    isFileLockProcessing = false;
                     setTimeout(() => {
                         box.classList.remove("animate-shake");
                         currentLockPinInput = "";
                         updateLockDots();
                     }, 400);
+                    return;
+                }
+
+                try {
+                    const { data: storedBlob, error: downloadError } = await downloadStoredFile(fileName);
+                    if (downloadError) throw downloadError;
+
+                    if (isLegacyLock) {
+                        if (activeLockAction === 'remove') {
+                            delete lockedFilesMap[fileName];
+                            localStorage.setItem(`locked_files_${currentUserId}`, JSON.stringify(lockedFilesMap));
+                            closeFileLockModal();
+                            fetchSupabaseFiles();
+                        } else {
+                            const encryptedBlob = await encryptFileBlob(storedBlob, pin);
+                            const { error: uploadError } = await replaceStoredFile(fileName, encryptedBlob);
+                            if (uploadError) throw uploadError;
+                            lockedFilesMap[fileName] = { encrypted: true };
+                            localStorage.setItem(`locked_files_${currentUserId}`, JSON.stringify(lockedFilesMap));
+                            closeFileLockModal();
+                            await executeFileOpen(pendingCategory, URL.createObjectURL(storedBlob), pendingDisplayName, fileName);
+                        }
+                    } else {
+                        const storedBytes = new Uint8Array(await storedBlob.slice(0, ENCRYPTION_MAGIC.length).arrayBuffer());
+                        if (!isAnyEncryptedBlob(storedBytes)) {
+                            const encryptedBlob = await encryptFileBlob(storedBlob, pin);
+                            const { error: uploadError } = await replaceStoredFile(fileName, encryptedBlob);
+                            if (uploadError) throw uploadError;
+                            if (activeLockAction === 'remove') {
+                                delete lockedFilesMap[fileName];
+                                localStorage.setItem(`locked_files_${currentUserId}`, JSON.stringify(lockedFilesMap));
+                                closeFileLockModal();
+                                fetchSupabaseFiles();
+                            } else {
+                                closeFileLockModal();
+                                await executeFileOpen(pendingCategory, URL.createObjectURL(storedBlob), pendingDisplayName, fileName);
+                            }
+                            pendingCategory = null;
+                            pendingUrl = null;
+                            pendingDisplayName = null;
+                            return;
+                        }
+
+                        const decryptedBlob = await decryptFileBlob(storedBlob, pin, fileMimeType(fileName));
+                        const isLegacyEncrypted = isLegacyEncryptedBlob(storedBytes);
+                        if (activeLockAction === 'remove') {
+                            const { error: uploadError } = await replaceStoredFile(fileName, decryptedBlob);
+                            if (uploadError) throw uploadError;
+                            delete lockedFilesMap[fileName];
+                            localStorage.setItem(`locked_files_${currentUserId}`, JSON.stringify(lockedFilesMap));
+                            closeFileLockModal();
+                            fetchSupabaseFiles();
+                        } else {
+                            if (isLegacyEncrypted) {
+                                const migratedBlob = await encryptFileBlob(decryptedBlob, pin);
+                                const { error: migrationError } = await replaceStoredFile(fileName, migratedBlob);
+                                if (migrationError) {
+                                    console.warn("File opened, but encryption upgrade was not saved:", migrationError);
+                                }
+                            }
+                            closeFileLockModal();
+                            await executeFileOpen(pendingCategory, URL.createObjectURL(decryptedBlob), pendingDisplayName, fileName);
+                        }
+                    }
+                    pendingCategory = null;
+                    pendingUrl = null;
+                    pendingDisplayName = null;
+                } catch (error) {
+                    box.classList.add("animate-shake");
+                    errorElement.innerText = error.name === "OperationError"
+                        ? "Incorrect PIN. Please try again."
+                        : (error.message || "Unable to unlock file.");
+                    setTimeout(() => {
+                        box.classList.remove("animate-shake");
+                        currentLockPinInput = "";
+                        updateLockDots();
+                    }, 500);
+                    subtitleElement.innerText = "Try again or cancel";
+                    isFileLockProcessing = false;
                 }
             }
         }
@@ -797,7 +1168,7 @@
             detailFileName.innerText = name;
             detailFileSize.innerText = size;
             detailFileDate.innerText = date;
-            detailFileUrl.value = url;
+            detailFileUrl.value = url || "Private session download only";
             detailsModal.classList.remove("hidden");
         }
 
@@ -829,19 +1200,230 @@
         function closeImageModal() {
             imageModal.classList.add("hidden");
             modalImage.src = "";
+            releasePreviewObjectUrl();
         }
 
         function closePdfModal() {
             pdfModal.classList.add("hidden");
             modalPdfFrame.src = "";
+            releasePreviewObjectUrl();
+        }
+
+        function closeFileViewerModal() {
+            fileViewerModal.classList.add("hidden");
+            modalFileFrame.src = "";
+            releasePreviewObjectUrl();
         }
 
         function closeAudioPlayer() {
             audioElement.pause();
             audioElement.src = "";
             audioPlayerBar.classList.add("hidden");
+            releasePreviewObjectUrl();
         }
     </script>
+
+    <style>
+        body {
+            background-color: #050812 !important;
+            background-image: radial-gradient(circle at 8% 24%, #67e8f9 0 1px, transparent 2px), radial-gradient(circle at 22% 78%, #a78bfa 0 1px, transparent 2px), radial-gradient(circle at 42% 14%, #fbbf24 0 1px, transparent 2px), linear-gradient(135deg, #050812 0%, #111a31 52%, #080b16 100%) !important;
+            background-size: 100% 100% !important;
+            font-family: 'Space Grotesk', sans-serif !important;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.55;
+            background-image: radial-gradient(circle at 12% 46%, #22d3ee 0 1px, transparent 2px), radial-gradient(circle at 31% 20%, #fbbf24 0 1px, transparent 2px), radial-gradient(circle at 57% 82%, #a78bfa 0 1px, transparent 2px), radial-gradient(circle at 88% 42%, #22d3ee 0 1px, transparent 2px);
+        }
+
+        #dashboardContent,
+        #authScreen {
+            isolation: isolate;
+        }
+
+        #dashboardContent::after {
+            content: '';
+            position: fixed;
+            width: 44rem;
+            height: 44rem;
+            right: -27rem;
+            top: 4rem;
+            border: 1px solid rgba(34, 211, 238, 0.16);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        #dashboardContent header,
+        #dashboardContent aside,
+        #dashboardContent #profileSection > div,
+        #dashboardContent #fileGrid > div {
+            background: rgba(15, 24, 44, 0.94) !important;
+            border-color: rgba(34, 211, 238, 0.25) !important;
+        }
+
+        #dashboardContent #fileGrid > div:hover {
+            border-color: rgba(103, 232, 249, 0.72) !important;
+            box-shadow: 0 0 24px rgba(34, 211, 238, 0.16) !important;
+            transform: translateY(-3px);
+        }
+
+        body.theme-light {
+            background-color: #eef6f8 !important;
+            background-image: radial-gradient(circle at 12% 18%, rgba(14, 116, 144, 0.16) 0 1px, transparent 2px), radial-gradient(circle at 82% 28%, rgba(124, 58, 237, 0.12) 0 1px, transparent 2px), linear-gradient(135deg, #f8fbfc 0%, #e7f3f5 52%, #f7f4ed 100%) !important;
+            color: #10212b !important;
+        }
+
+        body.theme-light::before {
+            opacity: 0.25;
+        }
+
+        body.theme-light #dashboardContent header,
+        body.theme-light #dashboardContent aside,
+        body.theme-light #dashboardContent #profileSection > div,
+        body.theme-light #dashboardContent #fileGrid > div {
+            background: rgba(255, 255, 255, 0.86) !important;
+            border-color: rgba(14, 116, 144, 0.22) !important;
+            color: #10212b;
+        }
+
+        body.theme-light #dashboardContent .bg-slate-900,
+        body.theme-light #dashboardContent .bg-slate-900\/80,
+        body.theme-light #dashboardContent .bg-slate-800\/80 {
+            background-color: rgba(226, 240, 243, 0.9) !important;
+        }
+
+        body.theme-light #dashboardContent .text-slate-400,
+        body.theme-light #dashboardContent .text-slate-500,
+        body.theme-light #dashboardContent .text-slate-300 {
+            color: #52707a !important;
+        }
+
+        body.theme-light #themeToggleBtn {
+            color: #334155 !important;
+            background: #fbbf24 !important;
+            border-color: rgba(180, 83, 9, 0.25) !important;
+        }
+
+        body.theme-light #lockModalBox {
+            background: rgba(255, 255, 255, 0.98) !important;
+            border-color: rgba(14, 116, 144, 0.24) !important;
+            color: #10212b !important;
+        }
+
+        body.theme-light #lockModalTitle {
+            color: #10212b !important;
+        }
+
+        body.theme-light #lockModalSub,
+        body.theme-light #lockModalBox > button:last-child,
+        body.theme-light #lockModalBox .text-slate-400 {
+            color: #52707a !important;
+        }
+
+        body.theme-light #lockModalBox .grid button {
+            background: #e6f3f5 !important;
+            border-color: rgba(14, 116, 144, 0.2) !important;
+            color: #10212b !important;
+        }
+
+        body.theme-light #lockModalBox .grid button:hover {
+            background: #c9eef2 !important;
+            color: #071018 !important;
+        }
+
+        body.theme-light #lockModalBox #lockDot1,
+        body.theme-light #lockModalBox #lockDot2,
+        body.theme-light #lockModalBox #lockDot3,
+        body.theme-light #lockModalBox #lockDot4 {
+            background: #e6f3f5 !important;
+            border-color: rgba(14, 116, 144, 0.35) !important;
+        }
+
+        body.theme-light #authScreen {
+            background: rgba(238, 246, 248, 0.94) !important;
+        }
+
+        body.theme-light #imageModal,
+        body.theme-light #pdfModal,
+        body.theme-light #fileViewerModal,
+        body.theme-light #detailsModal,
+        body.theme-light #fileLockModal {
+            background: rgba(218, 232, 235, 0.82) !important;
+        }
+
+        body.theme-light #authScreen > div,
+        body.theme-light #pdfModal > div,
+        body.theme-light #fileViewerModal > div,
+        body.theme-light #detailsModal > div {
+            background: rgba(255, 255, 255, 0.96) !important;
+            border-color: rgba(14, 116, 144, 0.24) !important;
+            color: #10212b !important;
+        }
+
+        body.theme-light #imageModal button,
+        body.theme-light #pdfModal button,
+        body.theme-light #fileViewerModal button,
+        body.theme-light #detailsModal button {
+            color: #24505d !important;
+            background: #e1f0f2 !important;
+        }
+
+        body.theme-light #imageModal p,
+        body.theme-light #pdfModal h3,
+        body.theme-light #fileViewerModal h3,
+        body.theme-light #detailsModal h3,
+        body.theme-light #detailsModal span {
+            color: #24505d !important;
+        }
+
+        body.theme-light #detailFileName,
+        body.theme-light #detailFileSize,
+        body.theme-light #detailFileDate,
+        body.theme-light #detailFileUrl,
+        body.theme-light #authScreen input,
+        body.theme-light #profileSection input,
+        body.theme-light #profileStorageText {
+            background: #edf7f8 !important;
+            border-color: rgba(14, 116, 144, 0.22) !important;
+            color: #10212b !important;
+        }
+
+        body.theme-light #authScreen input::placeholder,
+        body.theme-light #profileSection input::placeholder {
+            color: #6c8991 !important;
+        }
+
+        body.theme-light #pdfModal > div > div,
+        body.theme-light #fileViewerModal > div > div {
+            background: #e5f1f3 !important;
+            border-color: rgba(14, 116, 144, 0.2) !important;
+        }
+
+        body.theme-light #modalPdfFrame,
+        body.theme-light #modalFileFrame {
+            background: #f6fbfb !important;
+        }
+
+        body.theme-light #authScreen .bg-slate-900\/80 {
+            background: #e3f1f3 !important;
+            border-color: rgba(14, 116, 144, 0.2) !important;
+        }
+
+        body.theme-light #authScreen label,
+        body.theme-light #profileSection label {
+            color: #52707a !important;
+        }
+    </style>
+
+
+        
+
 
 </body>
 </html>
