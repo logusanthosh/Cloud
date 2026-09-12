@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Secure Vault - Mobile Responsive</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#090d16',
+                        cardBg: '#131c31',
+                        accent: '#3b82f6'
+                    },
+                    keyframes: {
+                        shake: {
+                            '0%, 100%': { transform: 'translateX(0)' },
+                            '20%, 60%': { transform: 'translateX(-6px)' },
+                            '40%, 80%': { transform: 'translateX(6px)' },
+                        },
+                        pop: {
+                            '0%': { transform: 'scale(0.9)', opacity: '0' },
+                            '100%': { transform: 'scale(1)', opacity: '1' }
+                        }
+                    },
+                    animation: {
+                        shake: 'shake 0.4s ease-in-out',
+                        pop: 'pop 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-darkBg text-white font-sans antialiased min-h-screen flex flex-col pb-28 md:pb-12 overflow-x-hidden">
+
+    <!-- ================= 1. AUTH SCREEN ================= -->
+    <div id="authScreen" class="fixed inset-0 bg-darkBg z-50 flex flex-col items-center justify-center p-4">
+        <div class="bg-cardBg/95 backdrop-blur-xl border border-slate-800 p-6 sm:p-8 rounded-3xl shadow-2xl w-full max-w-md flex flex-col">
+            
+            <div class="flex items-center justify-center gap-3 mb-6">
+                <div class="w-12 h-12 bg-accent/10 text-accent rounded-2xl flex items-center justify-center text-xl shadow-inner">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <span class="text-xl font-bold tracking-wider">SecureVault</span>
+            </div>
+
+            <!-- Tab Switcher -->
+            <div class="flex bg-slate-900/80 p-1 rounded-xl mb-6 border border-slate-800">
+                <button id="tabLoginBtn" onclick="switchAuthMode('login')" class="flex-1 py-2.5 rounded-lg text-sm font-semibold bg-accent text-white transition cursor-pointer">Login</button>
+                <button id="tabSignupBtn" onclick="switchAuthMode('signup')" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-slate-400 hover:text-white transition cursor-pointer">Sign Up</button>
+            </div>
+
+            <form id="authForm" onsubmit="handleAuth(event)" class="flex flex-col gap-4">
+                <div id="signupNameField" class="hidden">
+                    <label class="block text-xs font-medium text-slate-400 mb-1">User Name</label>
+                    <input type="text" id="authName" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-accent text-white transition" placeholder="John Doe">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Email Address</label>
+                    <input type="email" id="authEmail" required class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-accent text-white transition" placeholder="name@example.com">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Password</label>
+                    <div class="relative">
+                        <input type="password" id="authPassword" required minlength="6" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 pr-12 text-sm focus:outline-none focus:border-accent text-white transition" placeholder="••••••••">
+                        <button type="button" onclick="togglePasswordVisibility()" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition cursor-pointer">
+                            <i id="eyeIcon" class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <p id="authErrorMsg" class="text-red-400 text-xs font-medium h-4 text-center"></p>
+
+                <button type="submit" id="authSubmitBtn" class="w-full bg-accent hover:bg-blue-600 text-white font-semibold py-3.5 rounded-xl transition cursor-pointer mt-1 shadow-lg shadow-blue-500/20 active:scale-[0.98]">
+                    Login to Vault
+                </button>
+            </form>
+
+        </div>
+    </div>
+
+
+    <!-- ================= 2. MAIN DASHBOARD ================= -->
+    <div id="dashboardContent" class="hidden flex-1 flex flex-col md:flex-row min-h-screen">
+
+        <!-- Sidebar / Mobile Bottom Navigation -->
+        <aside class="w-full md:w-64 bg-cardBg/90 backdrop-blur-md border-t md:border-t-0 md:border-r border-slate-800 flex md:flex-col justify-between p-3 md:p-4 fixed md:sticky bottom-0 md:top-0 z-40">
+            <div class="hidden md:flex items-center gap-3 mb-8">
+                <div class="bg-accent p-2 rounded-xl text-white shadow-md shadow-blue-500/20">
+                    <i class="fa-solid fa-shield-halved text-xl"></i>
+                </div>
+                <span class="text-xl font-bold tracking-wider">SecureVault</span>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="flex md:flex-col gap-2 justify-around md:justify-start w-full">
+                <a href="#" onclick="switchSection('home')" id="navHome" class="flex flex-col md:flex-row items-center gap-1 md:gap-3 px-3 py-2 md:px-4 md:py-3 rounded-xl bg-accent text-white font-medium transition cursor-pointer shadow-lg shadow-blue-500/20 text-xs md:text-sm">
+                    <i class="fa-solid fa-house text-base md:text-sm"></i> <span>Home</span>
+                </a>
+                <a href="#" onclick="switchSection('profile')" id="navProfile" class="flex flex-col md:flex-row items-center gap-1 md:gap-3 px-3 py-2 md:px-4 md:py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition cursor-pointer text-xs md:text-sm">
+                    <i class="fa-solid fa-user text-base md:text-sm"></i> <span>Profile</span>
+                </a>
+            </nav>
+
+            <!-- Storage Bar (Desktop Only) -->
+            <div class="hidden md:block bg-slate-900/80 p-4 rounded-xl border border-slate-800 mt-auto">
+                <div class="flex justify-between text-xs text-slate-400 mb-1">
+                    <span id="storageText">0 MB of 2048 MB</span>
+                    <span class="text-green-400">Active</span>
+                </div>
+                <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                    <div id="storageProgressBar" class="bg-accent h-full w-[0%] transition-all duration-300"></div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Body Area -->
+        <main class="flex-1 p-4 sm:p-6 md:p-8 flex flex-col gap-6 max-w-7xl w-full mx-auto">
+            
+            <!-- Top Header -->
+            <header class="flex justify-between items-center bg-cardBg/80 backdrop-blur-md p-4 rounded-2xl border border-slate-800 shadow-xl">
+                <div>
+                    <h1 id="welcomeGreeting" class="text-lg sm:text-xl md:text-2xl font-bold truncate max-w-[200px] sm:max-w-sm">Welcome back! 👋</h1>
+                    <p id="userEmailDisplay" class="text-xs text-slate-400 truncate max-w-[180px] sm:max-w-xs"></p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="logoutUser()" title="Logout" class="bg-slate-800/80 hover:bg-red-500/20 hover:text-red-400 px-3.5 py-2 rounded-xl text-slate-300 text-xs font-semibold flex items-center gap-2 transition cursor-pointer border border-slate-700/50">
+                        <i class="fa-solid fa-right-from-bracket"></i> <span class="hidden sm:inline">Logout</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- ================= HOME SECTION ================= -->
+            <div id="homeSection" class="flex flex-col gap-6">
+                <!-- Hidden File Input -->
+                <input type="file" id="fileInput" class="hidden" multiple accept="image/*,application/pdf,audio/*,.mp3">
+
+                <!-- Upload Box -->
+                <div onclick="document.getElementById('fileInput').click()" class="border-2 border-dashed border-slate-700 hover:border-accent bg-cardBg/30 hover:bg-cardBg/60 rounded-2xl p-6 sm:p-8 text-center transition cursor-pointer flex flex-col items-center justify-center gap-3 group active:scale-[0.99]">
+                    <div class="w-14 h-14 bg-accent/10 text-accent rounded-2xl group-hover:scale-110 transition-transform flex items-center justify-center text-2xl shadow-inner">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-base sm:text-lg">Click to upload to Private Cloud</h3>
+                        <p class="text-xs sm:text-sm text-slate-400">Photos, PDFs, or MP3 files (Up to 2GB)</p>
+                    </div>
+                </div>
+
+                <!-- Recent Files Grid -->
+                <section>
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-base sm:text-lg font-bold">My Vault Files</h2>
+                        <span id="fileCount" class="text-xs text-slate-400">Loading...</span>
+                    </div>
+
+                    <div id="fileGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                        <!-- Files loaded dynamically -->
+                    </div>
+                </section>
+            </div>
+
+            <!-- ================= PROFILE SECTION ================= -->
+            <div id="profileSection" class="hidden flex flex-col gap-6 max-w-2xl w-full mx-auto">
+                <div class="bg-cardBg/80 backdrop-blur-md border border-slate-800 p-5 sm:p-6 rounded-2xl shadow-xl flex flex-col gap-6">
+                    <div class="flex items-center gap-4 pb-5 border-b border-slate-800">
+                        <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-accent/20 text-accent flex items-center justify-center text-2xl sm:text-3xl font-bold shadow-inner">
+                            <i class="fa-solid fa-user-shield"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-lg sm:text-xl font-bold">User Profile</h2>
+                            <p class="text-xs text-slate-400">Manage account & storage settings</p>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1">User Name</label>
+                            <input type="text" id="profileNameInput" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-accent text-white transition" placeholder="Enter your name">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1">Registered Email Address</label>
+                            <input type="text" id="profileEmail" disabled class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-300 cursor-not-allowed">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1">Storage Usage (2 GB Limit)</label>
+                            <div id="profileStorageText" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-xs sm:text-sm text-slate-300">
+                                Calculating...
+                            </div>
+                        </div>
+
+                        <p id="profileUpdateMsg" class="text-green-400 text-xs font-medium h-4"></p>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-3">
+                        <button onclick="updateUsername()" class="w-full sm:w-auto bg-accent hover:bg-blue-600 text-white px-6 py-3 rounded-xl text-sm font-semibold transition cursor-pointer shadow-lg shadow-blue-500/20 active:scale-95">
+                            <i class="fa-solid fa-floppy-disk mr-2"></i> Update Profile
+                        </button>
+                        <button onclick="logoutUser()" class="w-full sm:w-auto bg-red-500/10 hover:bg-red-500/20 text-red-400 px-6 py-3 rounded-xl text-sm font-semibold transition cursor-pointer border border-red-500/20 active:scale-95">
+                            <i class="fa-solid fa-right-from-bracket mr-2"></i> Sign Out
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+
+    <!-- ================= 3. MODALS ================= -->
+
+    <!-- Image Lightbox Modal -->
+    <div id="imageModal" class="fixed inset-0 bg-black/90 backdrop-blur-sm hidden z-50 flex flex-col items-center justify-center p-4">
+        <button onclick="closeImageModal()" class="absolute top-5 right-5 text-white text-xl bg-slate-800/80 w-10 h-10 rounded-full flex items-center justify-center hover:bg-slate-700 transition cursor-pointer">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <img id="modalImage" class="max-h-[75vh] max-w-full rounded-2xl shadow-2xl border border-slate-700/50 object-contain animate-pop" alt="Preview">
+        <p id="modalImageName" class="mt-4 text-xs sm:text-sm font-medium text-slate-300 text-center px-4 truncate max-w-xs"></p>
+    </div>
+
+    <!-- PDF Viewer Modal -->
+    <div id="pdfModal" class="fixed inset-0 bg-black/95 backdrop-blur-sm hidden z-50 flex flex-col items-center justify-center p-2 sm:p-6">
+        <div class="w-full max-w-4xl h-full max-h-[90vh] flex flex-col bg-cardBg rounded-2xl border border-slate-800 overflow-hidden shadow-2xl animate-pop">
+            <div class="flex justify-between items-center p-4 border-b border-slate-800 bg-slate-900/90">
+                <h3 id="modalPdfName" class="font-semibold text-xs sm:text-sm truncate max-w-[200px] sm:max-w-md">Document.pdf</h3>
+                <button onclick="closePdfModal()" class="text-slate-400 hover:text-white px-3 py-1.5 rounded-xl bg-slate-800 cursor-pointer text-xs font-medium">
+                    <i class="fa-solid fa-xmark mr-1"></i> Close
+                </button>
+            </div>
+            <iframe id="modalPdfFrame" class="w-full flex-1 bg-slate-950"></iframe>
+        </div>
+    </div>
+
+    <!-- File Details Modal -->
+    <div id="detailsModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-cardBg/95 backdrop-blur-xl border border-slate-800 p-5 sm:p-6 rounded-3xl w-full max-w-md flex flex-col gap-4 shadow-2xl animate-pop">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-800">
+                <h3 class="font-bold text-base flex items-center gap-2"><i class="fa-solid fa-circle-info text-accent"></i> File Details</h3>
+                <button onclick="closeDetailsModal()" class="text-slate-400 hover:text-white cursor-pointer p-2">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="flex flex-col gap-3 text-sm">
+                <div>
+                    <span class="text-xs text-slate-400 block mb-1">File Name</span>
+                    <p id="detailFileName" class="font-medium text-slate-200 bg-slate-900 p-3 rounded-xl border border-slate-800 truncate text-xs sm:text-sm">-</p>
+                </div>
+                <div>
+                    <span class="text-xs text-slate-400 block mb-1">File Size</span>
+                    <p id="detailFileSize" class="font-medium text-slate-200 bg-slate-900 p-3 rounded-xl border border-slate-800 text-xs sm:text-sm">-</p>
+                </div>
+                <div>
+                    <span class="text-xs text-slate-400 block mb-1">Upload Date</span>
+                    <p id="detailFileDate" class="font-medium text-slate-200 bg-slate-900 p-3 rounded-xl border border-slate-800 text-xs sm:text-sm">-</p>
+                </div>
+                <div>
+                    <span class="text-xs text-slate-400 block mb-1">Direct Cloud Link</span>
+                    <input type="text" id="detailFileUrl" readonly class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-400 select-all cursor-pointer">
+                </div>
+            </div>
+            <div class="flex justify-end pt-2">
+                <button onclick="closeDetailsModal()" class="bg-slate-800 hover:bg-slate-700 text-white px-5 py-2.5 rounded-xl text-xs font-semibold cursor-pointer">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- File Lock Passcode Modal -->
+    <div id="fileLockModal" class="fixed inset-0 bg-black/85 backdrop-blur-md hidden z-50 flex items-center justify-center p-4">
+        <div id="lockModalBox" class="bg-cardBg/95 backdrop-blur-2xl border border-slate-800 p-6 sm:p-7 rounded-3xl w-full max-w-xs flex flex-col items-center shadow-2xl animate-pop relative">
+            
+            <div class="w-14 h-14 bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 rounded-2xl flex items-center justify-center text-xl mb-4 shadow-inner">
+                <i id="lockModalIcon" class="fa-solid fa-lock"></i>
+            </div>
+
+            <h3 id="lockModalTitle" class="font-bold text-lg text-slate-100 mb-1">Unlock File</h3>
+            <p id="lockModalSub" class="text-xs text-slate-400 mb-5 text-center">Enter 4-digit PIN to access</p>
+
+            <!-- Dots -->
+            <div class="flex gap-3 mb-6">
+                <div id="lockDot1" class="w-3.5 h-3.5 rounded-full border border-slate-600 bg-slate-900 transition-all"></div>
+                <div id="lockDot2" class="w-3.5 h-3.5 rounded-full border border-slate-600 bg-slate-900 transition-all"></div>
+                <div id="lockDot3" class="w-3.5 h-3.5 rounded-full border border-slate-600 bg-slate-900 transition-all"></div>
+                <div id="lockDot4" class="w-3.5 h-3.5 rounded-full border border-slate-600 bg-slate-900 transition-all"></div>
+            </div>
+
+            <!-- Mini Keypad -->
+            <div class="grid grid-cols-3 gap-3 w-full mb-3">
+                <button onclick="pressFileLockKey('1')" class="h-12 rounded-xl bg-slate-800/40 hover:bg-slate-700 active:scale-95 text-lg font-semibold transition cursor-pointer flex items-center justify-center border border-slate-700/30">1</button>
+                <button onclick="pressFileLockKey('2')" class="h-12 rounded-xl bg-slate-800/40 hover:bg-slate-700 active:scale-95 text-lg font-semibold transition cursor-pointer flex items-center justify-center border border-slate-700/30">2</button>
+                <button onclick="pressFileLockKey('3')" class="h-12 rounded-xl bg-slate-800/40 hover:bg-slate-700 active:scale-95 text-lg font-semibold transition cursor-pointer flex items-center justify-center border border-slate-700/30">3</button>
+                <button onclick="pressFileLockKey('4')" class="h-12 rounded-xl bg-slate-800/40 hover:bg-slate-700 active:scale-95 text-lg font-semibold transition cursor-pointer flex items-center justify-center border border-slate-700/30">4</button>
+                <button onclick="pressFileLockKey('5')" class="h-12 rounded-xl bg-slate-800/40 hover:bg-slate-700 active:scale-95 text-lg font-semibold transition cursor-pointer flex items-center justify-center border border-slate-700/30">5</button>
+                <button onclick="pressFileLockKey('6')" class="h-12 rounded-xl bg-slate-800/40 hover:bg-slate-700 active:scale-95 text-lg font-semibold transition cursor-pointer flex items-center justify-center border border-slate-700/30">6</button>
+                <button onclick="pressFileLockKey('7')" class="h-12 rounded-xl bg-slate-800/40 hover:bg-slate-700 active:scale-95 text-lg font-semibold transition cursor-pointer flex items-center justify-center border border-slate-700/30">7</button>
+                <button onclick="pressFileLockKey('8')" class="h-12 rounded-xl bg-slate-800/40 hover:bg-slate-700 active:scale-95 text-lg font-semibold transition cursor-pointer flex items-center justify-center border border-slate-700/30">8</button>
+                <button onclick="pressFileLockKey('9')" class="h-12 rounded-xl bg-slate-800/40 hover:bg-slate-700 active:scale-95 text-lg font-semibold transition cursor-pointer flex items-center justify-center border border-slate-700/30">9</button>
+                <div></div>
+                <button onclick="pressFileLockKey('0')" class="h-12 rounded-xl bg-slate-800/40 hover:bg-slate-700 active:scale-95 text-lg font-semibold transition cursor-pointer flex items-center justify-center border border-slate-700/30">0</button>
+                <button onclick="deleteFileLockKey()" class="h-12 rounded-xl hover:bg-slate-800 active:scale-95 text-base text-slate-400 hover:text-white transition cursor-pointer flex items-center justify-center">
+                    <i class="fa-solid fa-delete-left"></i>
+                </button>
+            </div>
+
+            <p id="lockModalError" class="text-red-400 text-xs font-medium h-4 mt-1"></p>
+            <button onclick="closeFileLockModal()" class="mt-3 text-xs text-slate-400 hover:text-white transition cursor-pointer p-1">Cancel</button>
+        </div>
+    </div>
+
+
+    <!-- ================= 4. AUDIO PLAYER ================= -->
+    <div id="audioPlayerBar" class="fixed bottom-16 md:bottom-0 left-0 right-0 bg-cardBg/95 backdrop-blur-md border-t border-slate-800 p-3 sm:p-4 hidden z-30 flex items-center justify-between shadow-2xl">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-green-500/10 text-green-400 rounded-xl flex items-center justify-center text-lg sm:text-xl shadow-inner">
+                <i class="fa-solid fa-music"></i>
+            </div>
+            <div>
+                <h4 id="nowPlayingTitle" class="text-xs sm:text-sm font-semibold truncate max-w-[120px] sm:max-w-xs">Song Name</h4>
+                <p class="text-[10px] sm:text-xs text-slate-400">Audio Stream</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2 sm:gap-4">
+            <audio id="audioElement" controls class="h-8 sm:h-10 w-28 sm:w-auto outline-none"></audio>
+            <button onclick="closeAudioPlayer()" class="text-slate-400 hover:text-white px-2 py-1 text-sm font-semibold cursor-pointer">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+    </div>
+
+
+    <!-- ================= JAVASCRIPT LOGIC ================= -->
+    <script>
+        const SUPABASE_URL = 'https://uyaaogozdarvrqkipsbo.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5YWFvZ296ZGFydnJxa2lwc2JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkxMzI3MjUsImV4cCI6MjEwNDcwODcyNX0.YGP75kQRGM1-STkjgPlv5q-GZKOfeEN_d8PAZRNnDaA';
+        const BUCKET_NAME = 'vault-files';
+        const MAX_STORAGE_MB = 2048;
+
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let isSignupMode = false;
+        let currentUserId = null;
+
+        let activeLockAction = null;
+        let targetFileNameForLock = null;
+        let currentLockPinInput = "";
+        let pendingFileToOpen = null;
+
+        window.addEventListener("DOMContentLoaded", async () => {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) {
+                setupUserSession(session.user);
+            }
+        });
+
+        function togglePasswordVisibility() {
+            const passwordInput = document.getElementById("authPassword");
+            const eyeIcon = document.getElementById("eyeIcon");
+            if (passwordInput.type === "password") {
+                passwordInput.type = "text";
+                eyeIcon.classList.remove("fa-eye");
+                eyeIcon.classList.add("fa-eye-slash");
+            } else {
+                passwordInput.type = "password";
+                eyeIcon.classList.remove("fa-eye-slash");
+                eyeIcon.classList.add("fa-eye");
+            }
+        }
+
+        function switchAuthMode(mode) {
+            isSignupMode = (mode === 'signup');
+            const loginBtn = document.getElementById("tabLoginBtn");
+            const signupBtn = document.getElementById("tabSignupBtn");
+            const submitBtn = document.getElementById("authSubmitBtn");
+            const errorMsg = document.getElementById("authErrorMsg");
+            const signupNameField = document.getElementById("signupNameField");
+
+            errorMsg.innerText = "";
+
+            if (isSignupMode) {
+                signupBtn.className = "flex-1 py-2.5 rounded-lg text-sm font-semibold bg-accent text-white transition cursor-pointer";
+                loginBtn.className = "flex-1 py-2.5 rounded-lg text-sm font-semibold text-slate-400 hover:text-white transition cursor-pointer";
+                submitBtn.innerText = "Create Account";
+                signupNameField.classList.remove("hidden");
+                document.getElementById("authName").required = true;
+            } else {
+                loginBtn.className = "flex-1 py-2.5 rounded-lg text-sm font-semibold bg-accent text-white transition cursor-pointer";
+                signupBtn.className = "flex-1 py-2.5 rounded-lg text-sm font-semibold text-slate-400 hover:text-white transition cursor-pointer";
+                submitBtn.innerText = "Login to Vault";
+                signupNameField.classList.add("hidden");
+                document.getElementById("authName").required = false;
+            }
+        }
+
+        async function handleAuth(event) {
+            event.preventDefault();
+            const email = document.getElementById("authEmail").value;
+            const password = document.getElementById("authPassword").value;
+            const errorMsg = document.getElementById("authErrorMsg");
+            const submitBtn = document.getElementById("authSubmitBtn");
+
+            errorMsg.innerText = "";
+            submitBtn.innerText = "Processing...";
+            submitBtn.disabled = true;
+
+            if (isSignupMode) {
+                const name = document.getElementById("authName").value;
+                const { data, error } = await supabaseClient.auth.signUp({ 
+                    email, 
+                    password,
+                    options: { data: { full_name: name } }
+                });
+                if (error) {
+                    errorMsg.innerText = error.message;
+                    submitBtn.innerText = "Create Account";
+                    submitBtn.disabled = false;
+                } else {
+                    alert("Account created successfully! You can now log in.");
+                    switchAuthMode('login');
+                    submitBtn.disabled = false;
+                }
+            } else {
+                const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+                if (error) {
+                    errorMsg.innerText = error.message;
+                    submitBtn.innerText = "Login to Vault";
+                    submitBtn.disabled = false;
+                } else {
+                    setupUserSession(data.user);
+                }
+            }
+        }
+
+        async function updateUsername() {
+            const newName = document.getElementById("profileNameInput").value;
+            const msg = document.getElementById("profileUpdateMsg");
+            msg.innerText = "Updating...";
+
+            const { data, error } = await supabaseClient.auth.updateUser({
+                data: { full_name: newName }
+            });
+
+            if (error) {
+                msg.className = "text-red-400 text-xs font-medium h-4";
+                msg.innerText = error.message;
+            } else {
+                msg.className = "text-green-400 text-xs font-medium h-4";
+                msg.innerText = "Username updated successfully!";
+            }
+        }
+
+        async function logoutUser() {
+            await supabaseClient.auth.signOut();
+            currentUserId = null;
+            document.getElementById("dashboardContent").classList.add("hidden");
+            document.getElementById("authScreen").classList.remove("hidden");
+            document.getElementById("authEmail").value = "";
+            document.getElementById("authPassword").value = "";
+            document.getElementById("authName").value = "";
+            document.getElementById("authSubmitBtn").disabled = false;
+            document.getElementById("authSubmitBtn").innerText = "Login to Vault";
+            closeAudioPlayer();
+            closeImageModal();
+            closePdfModal();
+            closeDetailsModal();
+            closeFileLockModal();
+        }
+
+        function setupUserSession(user) {
+            currentUserId = user.id;
+            const userName = user.user_metadata?.full_name || user.email.split('@')[0];
+            document.getElementById("authScreen").classList.add("hidden");
+            document.getElementById("dashboardContent").classList.remove("hidden");
+            document.getElementById("welcomeGreeting").innerText = `Welcome back, ${userName}! 👋`;
+            document.getElementById("userEmailDisplay").innerText = user.email;
+            document.getElementById("profileEmail").value = user.email;
+            document.getElementById("profileNameInput").value = userName;
+            fetchSupabaseFiles();
+        }
+
+        function switchSection(section) {
+            const homeSec = document.getElementById("homeSection");
+            const profileSec = document.getElementById("profileSection");
+            const navHome = document.getElementById("navHome");
+            const navProfile = document.getElementById("navProfile");
+
+            if (section === 'home') {
+                homeSec.classList.remove("hidden");
+                profileSec.classList.add("hidden");
+                navHome.className = "flex flex-col md:flex-row items-center gap-1 md:gap-3 px-3 py-2 md:px-4 md:py-3 rounded-xl bg-accent text-white font-medium transition cursor-pointer shadow-lg shadow-blue-500/20 text-xs md:text-sm";
+                navProfile.className = "flex flex-col md:flex-row items-center gap-1 md:gap-3 px-3 py-2 md:px-4 md:py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition cursor-pointer text-xs md:text-sm";
+            } else if (section === 'profile') {
+                homeSec.classList.add("hidden");
+                profileSec.classList.remove("hidden");
+                navProfile.className = "flex flex-col md:flex-row items-center gap-1 md:gap-3 px-3 py-2 md:px-4 md:py-3 rounded-xl bg-accent text-white font-medium transition cursor-pointer shadow-lg shadow-blue-500/20 text-xs md:text-sm";
+                navHome.className = "flex flex-col md:flex-row items-center gap-1 md:gap-3 px-3 py-2 md:px-4 md:py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition cursor-pointer text-xs md:text-sm";
+            }
+        }
+
+        const fileInput = document.getElementById("fileInput");
+        const fileGrid = document.getElementById("fileGrid");
+        const fileCount = document.getElementById("fileCount");
+        const storageText = document.getElementById("storageText");
+        const storageProgressBar = document.getElementById("storageProgressBar");
+        const profileStorageText = document.getElementById("profileStorageText");
+        
+        const audioPlayerBar = document.getElementById("audioPlayerBar");
+        const audioElement = document.getElementById("audioElement");
+        const nowPlayingTitle = document.getElementById("nowPlayingTitle");
+
+        const imageModal = document.getElementById("imageModal");
+        const modalImage = document.getElementById("modalImage");
+        const modalImageName = document.getElementById("modalImageName");
+
+        const pdfModal = document.getElementById("pdfModal");
+        const modalPdfFrame = document.getElementById("modalPdfFrame");
+        const modalPdfName = document.getElementById("modalPdfName");
+
+        const detailsModal = document.getElementById("detailsModal");
+        const detailFileName = document.getElementById("detailFileName");
+        const detailFileSize = document.getElementById("detailFileSize");
+        const detailFileDate = document.getElementById("detailFileDate");
+        const detailFileUrl = document.getElementById("detailFileUrl");
+
+        async function fetchSupabaseFiles() {
+            if (!currentUserId) return;
+            fileGrid.innerHTML = `<p class="text-xs text-slate-400 col-span-full text-center py-6">Connecting to your private cloud...</p>`;
+            
+            const { data, error } = await supabaseClient.storage.from(BUCKET_NAME).list(currentUserId, {
+                limit: 100,
+                sortBy: { column: 'created_at', order: 'desc' }
+            });
+
+            if (error) {
+                console.error("Error fetching files:", error);
+                fileGrid.innerHTML = `<p class="text-xs text-red-400 col-span-full text-center py-6">Failed to load from Supabase.</p>`;
+                return;
+            }
+
+            fileGrid.innerHTML = "";
+            fileCount.innerText = `${data.length} files in vault`;
+
+            let totalBytes = 0;
+            data.forEach((file) => {
+                if(file.name !== ".emptyFolderPlaceholder" && file.metadata) {
+                    totalBytes += (file.metadata.size || 0);
+                }
+            });
+
+            const totalMB = totalBytes / (1024 * 1024);
+            const percentage = Math.min((totalMB / MAX_STORAGE_MB) * 100, 100);
+
+            storageText.innerText = `${totalMB.toFixed(2)} MB of ${MAX_STORAGE_MB} MB`;
+            storageProgressBar.style.width = `${percentage}%`;
+            profileStorageText.innerText = `${totalMB.toFixed(2)} MB used out of ${MAX_STORAGE_MB} MB limit (${percentage.toFixed(1)}%)`;
+
+            if (data.length === 0) {
+                fileGrid.innerHTML = `<p class="text-xs text-slate-500 col-span-full text-center py-6">Your vault is empty. Upload some files!</p>`;
+                return;
+            }
+
+            const lockedFilesMap = JSON.parse(localStorage.getItem(`locked_files_${currentUserId}`) || "{}");
+
+            data.forEach((file) => {
+                if(file.name === ".emptyFolderPlaceholder") return;
+                const filePath = `${currentUserId}/${file.name}`;
+                const { data: publicURLData } = supabaseClient.storage.from(BUCKET_NAME).getPublicUrl(filePath);
+                
+                const isLocked = !!lockedFilesMap[file.name];
+                renderFileCard(file.name, publicURLData.publicUrl, file.metadata, file.created_at, isLocked);
+            });
+        }
+
+        fileInput.addEventListener("change", async function(event) {
+            if (!currentUserId) return;
+            const files = event.target.files;
+            fileCount.innerText = "Uploading...";
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const fileName = `${Date.now()}_${file.name}`;
+                const filePath = `${currentUserId}/${fileName}`;
+
+                const { error } = await supabaseClient.storage
+                    .from(BUCKET_NAME)
+                    .upload(filePath, file);
+
+                if (error) {
+                    alert(`Upload failed for ${file.name}: ` + error.message);
+                }
+            }
+
+            fileInput.value = "";
+            fetchSupabaseFiles();
+        });
+
+        function renderFileCard(name, fileURL, metadata, createdAt, isLocked) {
+            const cleanDisplayName = name.substring(name.indexOf('_') + 1);
+            let fileIcon = "fa-file";
+            let iconColor = "text-slate-400";
+            let fileTypeCategory = "other";
+
+            const lowerName = name.toLowerCase();
+            if (lowerName.match(/\.(jpg|jpeg|png|webp|gif)$/)) {
+                fileIcon = "fa-image";
+                iconColor = "text-blue-400";
+                fileTypeCategory = "image";
+            } else if (lowerName.endsWith(".pdf")) {
+                fileIcon = "fa-file-pdf";
+                iconColor = "text-red-400";
+                fileTypeCategory = "pdf";
+            } else if (lowerName.match(/\.(mp3|wav|ogg|m4a)$/)) {
+                fileIcon = "fa-music";
+                iconColor = "text-green-400";
+                fileTypeCategory = "audio";
+            }
+
+            const fileSizeFormatted = metadata && metadata.size ? (metadata.size / (1024 * 1024)).toFixed(2) + " MB" : "Unknown size";
+            const fileDateFormatted = createdAt ? new Date(createdAt).toLocaleString() : "Recent";
+
+            const fileCard = document.createElement("div");
+            fileCard.className = "bg-cardBg border border-slate-800 rounded-2xl p-2.5 sm:p-3 flex flex-col gap-2 hover:border-slate-700 transition cursor-pointer relative group shadow-lg";
+            
+            let previewContent = `<div class="h-28 sm:h-32 bg-slate-900 rounded-xl flex items-center justify-center ${iconColor} text-2xl relative overflow-hidden">
+                <i class="fa-solid ${fileIcon}"></i>
+                ${isLocked ? '<div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center text-yellow-400 text-xl"><i class="fa-solid fa-lock"></i></div>' : ''}
+            </div>`;
+
+            if (fileTypeCategory === "image") {
+                previewContent = `<div class="h-28 sm:h-32 bg-slate-900 rounded-xl overflow-hidden flex items-center justify-center relative">
+                    <img src="${fileURL}" class="w-full h-full object-cover ${isLocked ? 'blur-lg scale-105' : ''}">
+                    ${isLocked ? '<div class="absolute inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center text-yellow-400 text-xl"><i class="fa-solid fa-lock"></i></div>' : ''}
+                </div>`;
+            }
+
+            fileCard.innerHTML = `
+                ${previewContent}
+                <div class="flex justify-between items-center px-0.5">
+                    <span class="text-xs sm:text-sm font-medium truncate max-w-[100px] sm:max-w-[130px]">${cleanDisplayName}</span>
+                    <div class="flex items-center gap-0.5">
+                        <button onclick="handleLockIconClick(event, '${name}', ${isLocked})" title="${isLocked ? 'Unlock' : 'Lock'}" class="text-slate-400 hover:text-yellow-400 p-1.5 transition">
+                            <i class="fa-solid ${isLocked ? 'fa-lock text-yellow-400' : 'fa-lock-open'} text-xs"></i>
+                        </button>
+                        <button onclick="openDetails(event, '${cleanDisplayName}', '${fileSizeFormatted}', '${fileDateFormatted}', '${fileURL}')" title="Details" class="text-slate-400 hover:text-accent p-1.5 transition">
+                            <i class="fa-solid fa-circle-info text-xs"></i>
+                        </button>
+                        <button onclick="deleteFile(event, '${name}')" title="Delete" class="text-slate-500 hover:text-red-400 p-1.5 transition">
+                            <i class="fa-solid fa-trash text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            fileCard.addEventListener("click", function(e) {
+                if(e.target.closest('button')) return;
+
+                if (isLocked) {
+                    targetFileNameForLock = name;
+                    activeLockAction = 'unlock';
+                    pendingFileToOpen = () => executeFileOpen(fileTypeCategory, fileURL, cleanDisplayName);
+                    openFileLockModal("Unlock Protected File", "Enter PIN to view file");
+                } else {
+                    executeFileOpen(fileTypeCategory, fileURL, cleanDisplayName);
+                }
+            });
+
+            fileGrid.appendChild(fileCard);
+        }
+
+        function executeFileOpen(category, url, name) {
+            if (category === "image") {
+                modalImage.src = url;
+                modalImageName.innerText = name;
+                imageModal.classList.remove("hidden");
+            } else if (category === "pdf") {
+                modalPdfFrame.src = url;
+                modalPdfName.innerText = name;
+                pdfModal.classList.remove("hidden");
+            } else if (category === "audio") {
+                nowPlayingTitle.innerText = name;
+                audioElement.src = url;
+                audioElement.load();
+                audioElement.play().catch(err => console.log(err));
+                audioPlayerBar.classList.remove("hidden");
+            } else {
+                window.open(url, '_blank');
+            }
+        }
+
+        function handleLockIconClick(event, fileName, isLocked) {
+            event.stopPropagation();
+            targetFileNameForLock = fileName;
+            
+            if (isLocked) {
+                activeLockAction = 'remove';
+                openFileLockModal("Remove File Lock", "Enter PIN to remove protection");
+            } else {
+                activeLockAction = 'create';
+                openFileLockModal("Protect File", "Create 4-digit PIN for this file");
+            }
+        }
+
+        function openFileLockModal(title, subtitle) {
+            document.getElementById("lockModalTitle").innerText = title;
+            document.getElementById("lockModalSub").innerText = subtitle;
+            currentLockPinInput = "";
+            updateLockDots();
+            document.getElementById("lockModalError").innerText = "";
+            document.getElementById("fileLockModal").classList.remove("hidden");
+        }
+
+        function closeFileLockModal() {
+            document.getElementById("fileLockModal").classList.add("hidden");
+            currentLockPinInput = "";
+            targetFileNameForLock = null;
+            activeLockAction = null;
+            pendingFileToOpen = null;
+        }
+
+        function pressFileLockKey(digit) {
+            if (currentLockPinInput.length < 4) {
+                currentLockPinInput += digit;
+                updateLockDots();
+
+                if (currentLockPinInput.length === 4) {
+                    setTimeout(processFileLockAction, 150);
+                }
+            }
+        }
+
+        function deleteFileLockKey() {
+            if (currentLockPinInput.length > 0) {
+                currentLockPinInput = currentLockPinInput.slice(0, -1);
+                updateLockDots();
+            }
+        }
+
+        function updateLockDots() {
+            for (let i = 1; i <= 4; i++) {
+                const dot = document.getElementById(`lockDot${i}`);
+                if (i <= currentLockPinInput.length) {
+                    dot.className = "w-3.5 h-3.5 rounded-full bg-accent shadow-[0_0_10px_rgba(59,130,246,0.6)] scale-110 transition-all";
+                } else {
+                    dot.className = "w-3.5 h-3.5 rounded-full border border-slate-600 bg-slate-900 scale-100 transition-all";
+                }
+            }
+        }
+
+        function processFileLockAction() {
+            const lockedFilesMap = JSON.parse(localStorage.getItem(`locked_files_${currentUserId}`) || "{}");
+            const errorElement = document.getElementById("lockModalError");
+            const box = document.getElementById("lockModalBox");
+
+            if (activeLockAction === 'create') {
+                lockedFilesMap[targetFileNameForLock] = currentLockPinInput;
+                localStorage.setItem(`locked_files_${currentUserId}`, JSON.stringify(lockedFilesMap));
+                closeFileLockModal();
+                fetchSupabaseFiles();
+            } else if (activeLockAction === 'remove' || activeLockAction === 'unlock') {
+                const correctPin = lockedFilesMap[targetFileNameForLock];
+                if (currentLockPinInput === correctPin) {
+                    if (activeLockAction === 'remove') {
+                        delete lockedFilesMap[targetFileNameForLock];
+                        localStorage.setItem(`locked_files_${currentUserId}`, JSON.stringify(lockedFilesMap));
+                        closeFileLockModal();
+                        fetchSupabaseFiles();
+                    } else {
+                        closeFileLockModal();
+                        if (pendingFileToOpen) {
+                            pendingFileToOpen();
+                            pendingFileToOpen = null;
+                        }
+                    }
+                } else {
+                    box.classList.add("animate-shake");
+                    errorElement.innerText = "Incorrect PIN!";
+                    setTimeout(() => {
+                        box.classList.remove("animate-shake");
+                        currentLockPinInput = "";
+                        updateLockDots();
+                    }, 400);
+                }
+            }
+        }
+
+        function openDetails(event, name, size, date, url) {
+            event.stopPropagation();
+            detailFileName.innerText = name;
+            detailFileSize.innerText = size;
+            detailFileDate.innerText = date;
+            detailFileUrl.value = url;
+            detailsModal.classList.remove("hidden");
+        }
+
+        function closeDetailsModal() {
+            detailsModal.classList.add("hidden");
+        }
+
+        async function deleteFile(event, fileName) {
+            event.stopPropagation();
+            if(!confirm("Are you sure you want to delete this file?")) return;
+
+            const filePath = `${currentUserId}/${fileName}`;
+            const { error } = await supabaseClient.storage
+                .from(BUCKET_NAME)
+                .remove([filePath]);
+
+            if (error) {
+                alert("Delete failed: " + error.message);
+            } else {
+                const lockedFilesMap = JSON.parse(localStorage.getItem(`locked_files_${currentUserId}`) || "{}");
+                if (lockedFilesMap[fileName]) {
+                    delete lockedFilesMap[fileName];
+                    localStorage.setItem(`locked_files_${currentUserId}`, JSON.stringify(lockedFilesMap));
+                }
+                fetchSupabaseFiles();
+            }
+        }
+
+        function closeImageModal() {
+            imageModal.classList.add("hidden");
+            modalImage.src = "";
+        }
+
+        function closePdfModal() {
+            pdfModal.classList.add("hidden");
+            modalPdfFrame.src = "";
+        }
+
+        function closeAudioPlayer() {
+            audioElement.pause();
+            audioElement.src = "";
+            audioPlayerBar.classList.add("hidden");
+        }
+    </script>
+
+</body>
+</html>
