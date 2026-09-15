@@ -170,6 +170,7 @@
                 </div>
                 <span class="text-xl font-bold tracking-wider">SecureVault</span>
             </div>
+                <p id="startupStatus" class="text-xs text-slate-400 text-center mb-4" aria-live="polite">Loading your vault...</p>
 
             <!-- Tab Switcher -->
             <div class="flex bg-slate-900/80 p-1 rounded-xl mb-6 border border-slate-800">
@@ -268,13 +269,13 @@
                 <input type="file" id="fileInput" class="hidden" multiple accept="image/*,application/pdf,audio/*,.mp3">
 
                 <!-- Upload Box -->
-                <div onclick="document.getElementById('fileInput').click()" class="border-2 border-dashed border-slate-700 hover:border-accent bg-cardBg/30 hover:bg-cardBg/60 rounded-2xl p-6 sm:p-8 text-center transition cursor-pointer flex flex-col items-center justify-center gap-3 group active:scale-[0.99]">
+                <div id="uploadTrigger" onclick="openFilePicker()" role="button" tabindex="0" aria-disabled="false" class="border-2 border-dashed border-slate-700 hover:border-accent bg-cardBg/30 hover:bg-cardBg/60 rounded-2xl p-6 sm:p-8 text-center transition cursor-pointer flex flex-col items-center justify-center gap-3 group active:scale-[0.99]">
                     <div class="w-14 h-14 bg-accent/10 text-accent rounded-2xl group-hover:scale-110 transition-transform flex items-center justify-center text-2xl shadow-inner">
                         <i class="fa-solid fa-cloud-arrow-up"></i>
                     </div>
                     <div>
-                        <h3 class="font-semibold text-base sm:text-lg">Click to upload to Private Cloud</h3>
-                        <p class="text-xs sm:text-sm text-slate-400">Photos, PDFs, or MP3 files (Up to 2GB)</p>
+                        <h3 id="uploadPromptTitle" class="font-semibold text-base sm:text-lg">Click to upload to Private Cloud</h3>
+                        <p id="uploadPromptStatus" class="text-xs sm:text-sm text-slate-400">Photos, PDFs, or MP3 files (Up to 2GB)</p>
                     </div>
                 </div>
 
@@ -285,9 +286,12 @@
                         <span id="fileCount" class="text-xs text-slate-400">Loading...</span>
                     </div>
 
-                    <div id="fileGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                    <div id="fileGrid" aria-busy="false" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                         <!-- Files loaded dynamically -->
                     </div>
+                    <button id="loadMoreFilesBtn" onclick="loadMoreFiles()" class="hidden mx-auto mt-5 bg-slate-800/80 hover:bg-slate-700 px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 transition cursor-pointer border border-slate-700/50">
+                        Load more
+                    </button>
                 </section>
             </div>
 
@@ -343,6 +347,12 @@
     <!-- ================= 3. MODALS ================= -->
 
     <!-- Image Lightbox Modal -->
+    <div id="previewLoading" class="fixed inset-0 hidden z-[60] items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div class="bg-cardBg border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-200 shadow-xl">
+            <i class="fa-solid fa-spinner fa-spin mr-2 text-accent"></i><span id="previewLoadingText">Opening file...</span>
+        </div>
+    </div>
+
     <div id="imageModal" class="fixed inset-0 bg-black/90 backdrop-blur-sm hidden z-50 flex flex-col items-center justify-center p-4">
         <button onclick="closeImageModal()" class="absolute top-5 right-5 text-white text-xl bg-slate-800/80 w-10 h-10 rounded-full flex items-center justify-center hover:bg-slate-700 transition cursor-pointer">
             <i class="fa-solid fa-xmark"></i>
@@ -466,7 +476,7 @@
         </div>
 
         <div class="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
-            <audio id="audioElement" controls class="h-9 sm:h-10 w-full sm:w-auto sm:min-w-[260px] outline-none"></audio>
+            <audio id="audioElement" controls preload="metadata" class="h-9 sm:h-10 w-full sm:w-auto sm:min-w-[260px] outline-none"></audio>
             <button onclick="closeAudioPlayer()" title="Close audio player" class="text-slate-400 hover:text-white px-2 py-1 text-sm font-semibold cursor-pointer shrink-0">
                 <i class="fa-solid fa-xmark text-lg"></i>
             </button>
@@ -480,6 +490,8 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5YWFvZ296ZGFydnJxa2lwc2JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkxMzI3MjUsImV4cCI6MjEwNDcwODcyNX0.YGP75kQRGM1-STkjgPlv5q-GZKOfeEN_d8PAZRNnDaA';
         const BUCKET_NAME = 'vault-files';
         const MAX_STORAGE_MB = 2048;
+        const FILE_PAGE_SIZE = 40;
+        const UPLOAD_CONCURRENCY = 3;
         const ENCRYPTION_MAGIC = new TextEncoder().encode('SV2');
         const LEGACY_ENCRYPTION_MAGIC = new TextEncoder().encode('SV1');
         const PBKDF2_ITERATIONS = 100000;
@@ -500,6 +512,13 @@
         let pendingUrl = null;
         let pendingDisplayName = null;
         let activePreviewObjectUrl = null;
+        let fileListOffset = 0;
+        let hasMoreFiles = false;
+        let isFileListLoading = false;
+        let previewLoadToken = 0;
+        let isUploadInProgress = false;
+        const signedUrlCache = new Map();
+        const SIGNED_URL_EXPIRY_SECONDS = 600;
 
         function applyTheme(theme) {
             const isLight = theme === "light";
@@ -519,6 +538,29 @@
         }
 
         applyTheme(localStorage.getItem("securevault_theme") || "dark");
+
+        function showLoading(message) {
+            previewLoadingText.innerText = message;
+            previewLoading.setAttribute("aria-busy", "true");
+            previewLoading.classList.remove("hidden");
+            previewLoading.classList.add("flex");
+        }
+
+        function hideLoading() {
+            previewLoading.setAttribute("aria-busy", "false");
+            previewLoading.classList.add("hidden");
+            previewLoading.classList.remove("flex");
+        }
+
+        function setUploadState(isUploading, total = 0, completed = 0) {
+            isUploadInProgress = isUploading;
+            fileInput.disabled = isUploading;
+            uploadTrigger.setAttribute("aria-disabled", String(isUploading));
+            uploadPromptTitle.innerText = isUploading ? "Uploading..." : "Click to upload to Private Cloud";
+            uploadPromptStatus.innerText = isUploading
+                ? `${completed} / ${total} completed`
+                : "Photos, PDFs, or MP3 files (Up to 2GB)";
+        }
 
         function deriveFileKey(pin, salt, iterations = PBKDF2_ITERATIONS) {
             return crypto.subtle.importKey(
@@ -601,6 +643,27 @@
             return supabaseClient.storage.from(BUCKET_NAME).download(`${currentUserId}/${fileName}`);
         }
 
+        async function getFilePreviewUrl(fileName) {
+            const filePath = `${currentUserId}/${fileName}`;
+            const cachedUrl = signedUrlCache.get(filePath);
+            if (cachedUrl && cachedUrl.expiresAt > Date.now()) {
+                return cachedUrl.url;
+            }
+
+            const { data, error } = await supabaseClient.storage
+                .from(BUCKET_NAME)
+                .createSignedUrl(filePath, SIGNED_URL_EXPIRY_SECONDS);
+            if (error || !data?.signedUrl) {
+                throw new Error("Unable to create a secure preview link.");
+            }
+
+            signedUrlCache.set(filePath, {
+                url: data.signedUrl,
+                expiresAt: Date.now() + (SIGNED_URL_EXPIRY_SECONDS - 15) * 1000
+            });
+            return data.signedUrl;
+        }
+
         async function replaceStoredFile(fileName, blob) {
             return supabaseClient.storage.from(BUCKET_NAME).update(
                 `${currentUserId}/${fileName}`,
@@ -610,9 +673,13 @@
         }
 
         window.addEventListener("DOMContentLoaded", async () => {
+            const startupStatus = document.getElementById("startupStatus");
+            startupStatus.innerText = "Loading your vault...";
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (session) {
                 setupUserSession(session.user);
+            } else {
+                startupStatus.classList.add("hidden");
             }
         });
 
@@ -762,8 +829,12 @@
         }
 
         const fileInput = document.getElementById("fileInput");
+        const uploadTrigger = document.getElementById("uploadTrigger");
+        const uploadPromptTitle = document.getElementById("uploadPromptTitle");
+        const uploadPromptStatus = document.getElementById("uploadPromptStatus");
         const fileGrid = document.getElementById("fileGrid");
         const fileCount = document.getElementById("fileCount");
+        const loadMoreFilesBtn = document.getElementById("loadMoreFilesBtn");
         const storageText = document.getElementById("storageText");
         const storageProgressBar = document.getElementById("storageProgressBar");
         const profileStorageText = document.getElementById("profileStorageText");
@@ -783,6 +854,8 @@
         const fileViewerModal = document.getElementById("fileViewerModal");
         const modalFileFrame = document.getElementById("modalFileFrame");
         const modalFileName = document.getElementById("modalFileName");
+        const previewLoading = document.getElementById("previewLoading");
+        const previewLoadingText = document.getElementById("previewLoadingText");
 
         const detailsModal = document.getElementById("detailsModal");
         const detailFileName = document.getElementById("detailFileName");
@@ -790,74 +863,159 @@
         const detailFileDate = document.getElementById("detailFileDate");
         const detailFileUrl = document.getElementById("detailFileUrl");
 
-        async function fetchSupabaseFiles() {
+        function openFilePicker() {
+            if (!isUploadInProgress) {
+                fileInput.click();
+            }
+        }
+
+        uploadTrigger.addEventListener("keydown", (event) => {
+            if ((event.key === "Enter" || event.key === " ") && !isUploadInProgress) {
+                event.preventDefault();
+                openFilePicker();
+            }
+        });
+
+        async function fetchSupabaseFiles(loadMore = false) {
             if (!currentUserId) return;
-            fileGrid.innerHTML = `<p class="text-xs text-slate-400 col-span-full text-center py-6">Connecting to your private cloud...</p>`;
-            
-            const { data, error } = await supabaseClient.storage.from(BUCKET_NAME).list(currentUserId, {
-                limit: 100,
-                sortBy: { column: 'created_at', order: 'desc' }
-            });
-
-            if (error) {
-                console.error("Error fetching files:", error);
-                fileGrid.innerHTML = `<p class="text-xs text-red-400 col-span-full text-center py-6">Failed to load from Supabase.</p>`;
-                return;
+            if (isFileListLoading) return;
+            isFileListLoading = true;
+            fileGrid.setAttribute("aria-busy", "true");
+            if (!loadMore) {
+                fileListOffset = 0;
+                hasMoreFiles = false;
+                loadMoreFilesBtn.classList.add("hidden");
+                fileGrid.innerHTML = `<p class="text-xs text-slate-400 col-span-full text-center py-6">Loading your files...</p>`;
+            } else {
+                loadMoreFilesBtn.disabled = true;
+                loadMoreFilesBtn.innerText = "Loading...";
             }
 
-            fileGrid.innerHTML = "";
-            fileCount.innerText = `${data.length} files in vault`;
+            try {
+                const { data, error } = await supabaseClient.storage.from(BUCKET_NAME).list(currentUserId, {
+                    limit: FILE_PAGE_SIZE,
+                    offset: fileListOffset,
+                    sortBy: { column: 'created_at', order: 'desc' }
+                });
 
-            let totalBytes = 0;
-            data.forEach((file) => {
-                if(file.name !== ".emptyFolderPlaceholder" && file.metadata) {
-                    totalBytes += (file.metadata.size || 0);
+                if (error) {
+                    fileGrid.innerHTML = `<div class="col-span-full text-center py-6"><p class="text-xs text-red-400 mb-3">Unable to load your files.</p><button onclick="fetchSupabaseFiles()" class="text-xs text-accent hover:underline cursor-pointer">Try again</button></div>`;
+                    return;
                 }
-            });
 
-            const totalMB = totalBytes / (1024 * 1024);
-            const percentage = Math.min((totalMB / MAX_STORAGE_MB) * 100, 100);
+                const files = data || [];
+                if (!loadMore) {
+                    fileGrid.innerHTML = "";
+                }
+                fileListOffset += files.length;
+                hasMoreFiles = files.length === FILE_PAGE_SIZE;
 
-            storageText.innerText = `${totalMB.toFixed(2)} MB of ${MAX_STORAGE_MB} MB`;
-            storageProgressBar.style.width = `${percentage}%`;
-            profileStorageText.innerText = `${totalMB.toFixed(2)} MB used out of ${MAX_STORAGE_MB} MB limit (${percentage.toFixed(1)}%)`;
+                let totalBytes = 0;
+                files.forEach((file) => {
+                    if(file.name !== ".emptyFolderPlaceholder" && file.metadata) {
+                        totalBytes += (file.metadata.size || 0);
+                    }
+                });
 
-            if (data.length === 0) {
-                fileGrid.innerHTML = `<p class="text-xs text-slate-500 col-span-full text-center py-6">Your vault is empty. Upload some files!</p>`;
-                return;
+                const totalMB = totalBytes / (1024 * 1024);
+                const percentage = Math.min((totalMB / MAX_STORAGE_MB) * 100, 100);
+
+                storageText.innerText = `${totalMB.toFixed(2)} MB of ${MAX_STORAGE_MB} MB`;
+                storageProgressBar.style.width = `${percentage}%`;
+                profileStorageText.innerText = `${totalMB.toFixed(2)} MB used out of ${MAX_STORAGE_MB} MB limit (${percentage.toFixed(1)}%)`;
+
+                if (!loadMore && files.length === 0) {
+                    fileGrid.innerHTML = `<p class="text-xs text-slate-500 col-span-full text-center py-6">Your vault is empty. Upload some files!</p>`;
+                } else {
+                    const lockedFilesMap = JSON.parse(localStorage.getItem(`locked_files_${currentUserId}`) || "{}");
+                    files.forEach((file) => {
+                        if(file.name === ".emptyFolderPlaceholder") return;
+                        renderFileCard(file.name, null, file.metadata, file.created_at, !!lockedFilesMap[file.name]);
+                    });
+                }
+                fileCount.innerText = hasMoreFiles
+                    ? `Showing ${fileListOffset} files`
+                    : `${fileListOffset} file${fileListOffset === 1 ? "" : "s"} in vault`;
+                loadMoreFilesBtn.classList.toggle("hidden", !hasMoreFiles);
+            } finally {
+                isFileListLoading = false;
+                fileGrid.setAttribute("aria-busy", "false");
+                loadMoreFilesBtn.disabled = false;
+                loadMoreFilesBtn.innerText = "Load more";
+            }
+        }
+
+        function loadMoreFiles() {
+            fetchSupabaseFiles(true);
+        }
+
+        async function uploadSingleFile(file) {
+            const fileName = `${Date.now()}_${file.name}`;
+            const filePath = `${currentUserId}/${fileName}`;
+            const { error } = await supabaseClient.storage
+                .from(BUCKET_NAME)
+                .upload(filePath, file);
+
+            return { file, error };
+        }
+
+        async function uploadSelectedFiles(files) {
+            let nextFileIndex = 0;
+            let completedCount = 0;
+
+            // Keep only a few uploads active so large batches do not overwhelm the browser or storage API.
+            async function uploadWorker() {
+                const workerResults = [];
+                while (nextFileIndex < files.length) {
+                    const file = files[nextFileIndex++];
+                    try {
+                        const result = await uploadSingleFile(file);
+                        workerResults.push(result);
+                    } catch {
+                        workerResults.push({ file, error: true });
+                    } finally {
+                        completedCount++;
+                        fileCount.innerText = `Uploading ${completedCount} / ${files.length}`;
+                        setUploadState(true, files.length, completedCount);
+                    }
+                }
+                return workerResults;
             }
 
-            const lockedFilesMap = JSON.parse(localStorage.getItem(`locked_files_${currentUserId}`) || "{}");
-
-            data.forEach((file) => {
-                if(file.name === ".emptyFolderPlaceholder") return;
-                const filePath = `${currentUserId}/${file.name}`;
-                const isLocked = !!lockedFilesMap[file.name];
-                renderFileCard(file.name, null, file.metadata, file.created_at, isLocked);
-            });
+            const workerCount = Math.min(UPLOAD_CONCURRENCY, files.length);
+            const workers = Array.from({ length: workerCount }, () => uploadWorker());
+            const settledWorkers = await Promise.allSettled(workers);
+            return settledWorkers.flatMap(result => result.status === "fulfilled" ? result.value : []);
         }
 
         fileInput.addEventListener("change", async function(event) {
-            if (!currentUserId) return;
-            const files = event.target.files;
-            fileCount.innerText = "Uploading...";
+            if (!currentUserId || isUploadInProgress) return;
+            const files = Array.from(event.target.files);
+            if (files.length === 0) return;
 
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                const fileName = `${Date.now()}_${file.name}`;
-                const filePath = `${currentUserId}/${fileName}`;
+            setUploadState(true, files.length, 0);
+            fileCount.innerText = `Uploading 0 / ${files.length}`;
+            try {
+                const uploadResults = files.length === 1
+                    ? [await uploadSingleFile(files[0]).catch(() => ({ file: files[0], error: true }))]
+                    : await uploadSelectedFiles(files);
+                const failedCount = uploadResults.filter(result => result.error).length;
+                const successfulCount = uploadResults.length - failedCount;
 
-                const { error } = await supabaseClient.storage
-                    .from(BUCKET_NAME)
-                    .upload(filePath, file);
+                setUploadState(true, files.length, files.length);
+                fileCount.innerText = `Uploading ${files.length} / ${files.length}`;
+                fileInput.value = "";
+                await fetchSupabaseFiles();
 
-                if (error) {
-                    alert(`Upload failed for ${file.name}: ` + error.message);
+                const successText = `${successfulCount} file${successfulCount === 1 ? "" : "s"} uploaded successfully.`;
+                const failureText = `${failedCount} file${failedCount === 1 ? "" : "s"} failed.`;
+                fileCount.innerText = failedCount ? `${successText} ${failureText}` : successText;
+                if (failedCount > 0) {
+                    alert(`${successText}\n${failureText}`);
                 }
+            } finally {
+                setUploadState(false);
             }
-
-            fileInput.value = "";
-            fetchSupabaseFiles();
         });
 
         function renderFileCard(name, fileURL, metadata, createdAt, isLocked) {
@@ -936,43 +1094,84 @@
         }
 
         async function executeFileOpen(category, url, name, fileName) {
-            let objectUrl = url;
-            if (!objectUrl) {
-                const { data, error } = await downloadStoredFile(fileName);
-                if (error) {
-                    alert("Unable to open file: " + error.message);
-                    return;
-                }
-                objectUrl = URL.createObjectURL(data);
+            const isObjectUrl = typeof url === "string" && url.startsWith("blob:");
+            const loadToken = ++previewLoadToken;
+            let previewUrl = url;
+            const waitForMedia = category === "image" || category === "pdf" || category === "audio";
+            if (category === "audio") {
+                audioElement.pause();
             }
+            showLoading(category === "image" ? "Opening image..." : "Opening file...");
 
-            activePreviewObjectUrl = objectUrl;
-            if (category === "image") {
-                modalImage.src = objectUrl;
-                modalImageName.innerText = name;
-                imageModal.classList.remove("hidden");
-            } else if (category === "pdf") {
-                modalPdfFrame.src = objectUrl;
-                modalPdfName.innerText = name;
-                pdfModal.classList.remove("hidden");
-            } else if (category === "audio") {
-                nowPlayingTitle.innerText = name;
-                audioElement.src = objectUrl;
-                audioElement.load();
-                audioElement.play().catch(err => console.log(err));
-                audioPlayerBar.classList.remove("hidden");
-            } else {
-                modalFileFrame.src = objectUrl;
-                modalFileName.innerText = name;
-                fileViewerModal.classList.remove("hidden");
+            try {
+                if (!isObjectUrl) {
+                    previewUrl = await getFilePreviewUrl(fileName);
+                }
+
+                releasePreviewObjectUrl();
+                activePreviewObjectUrl = isObjectUrl ? previewUrl : null;
+                if (category === "image") {
+                    modalImage.dataset.previewToken = String(loadToken);
+                    modalImage.src = previewUrl;
+                    modalImageName.innerText = name;
+                    imageModal.classList.remove("hidden");
+                } else if (category === "pdf") {
+                    showLoading("Opening PDF...");
+                    modalPdfFrame.dataset.previewToken = String(loadToken);
+                    modalPdfFrame.src = previewUrl;
+                    modalPdfName.innerText = name;
+                    pdfModal.classList.remove("hidden");
+                } else if (category === "audio") {
+                    showLoading("Loading audio...");
+                    audioElement.dataset.previewToken = String(loadToken);
+                    nowPlayingTitle.innerText = name;
+                    audioElement.src = previewUrl;
+                    audioElement.load();
+                    audioElement.play().catch(() => {});
+                    audioPlayerBar.classList.remove("hidden");
+                } else {
+                    modalFileFrame.src = previewUrl;
+                    modalFileName.innerText = name;
+                    fileViewerModal.classList.remove("hidden");
+                }
+            } catch (error) {
+                if (loadToken === previewLoadToken) {
+                    hideLoading();
+                }
+                alert(error.message || "Unable to open file.");
+            } finally {
+                if (!waitForMedia && loadToken === previewLoadToken) {
+                    hideLoading();
+                }
             }
         }
 
+        function finishPreviewLoading(loadToken) {
+            if (loadToken !== previewLoadToken) return;
+            hideLoading();
+        }
+
+        function showPreviewError(loadToken, message) {
+            if (loadToken !== previewLoadToken) return;
+            hideLoading();
+            alert(message);
+        }
+
+        modalImage.addEventListener("load", (event) => finishPreviewLoading(Number(event.currentTarget.dataset.previewToken)));
+        modalImage.addEventListener("error", (event) => showPreviewError(Number(event.currentTarget.dataset.previewToken), "Unable to open this image."));
+        modalPdfFrame.addEventListener("load", (event) => finishPreviewLoading(Number(event.currentTarget.dataset.previewToken)));
+        modalPdfFrame.addEventListener("error", (event) => showPreviewError(Number(event.currentTarget.dataset.previewToken), "Unable to open this PDF."));
+        audioElement.addEventListener("loadedmetadata", (event) => finishPreviewLoading(Number(event.currentTarget.dataset.previewToken)));
+        audioElement.addEventListener("canplay", (event) => finishPreviewLoading(Number(event.currentTarget.dataset.previewToken)));
+        audioElement.addEventListener("error", (event) => {
+            showPreviewError(Number(event.currentTarget.dataset.previewToken), "Unable to load audio preview.");
+        });
+
         function releasePreviewObjectUrl() {
-            if (activePreviewObjectUrl) {
+            if (activePreviewObjectUrl && activePreviewObjectUrl.startsWith("blob:")) {
                 URL.revokeObjectURL(activePreviewObjectUrl);
-                activePreviewObjectUrl = null;
             }
+            activePreviewObjectUrl = null;
         }
 
         function handleLockIconClick(event, fileName, isLocked) {
@@ -998,6 +1197,7 @@
         }
 
         function closeFileLockModal() {
+            hideLoading();
             document.getElementById("fileLockModal").classList.add("hidden");
             currentLockPinInput = "";
             isFileLockProcessing = false;
@@ -1042,6 +1242,7 @@
         async function processFileLockAction() {
             if (isFileLockProcessing) return;
             isFileLockProcessing = true;
+            showLoading("Unlocking file...");
             const lockedFilesMap = JSON.parse(localStorage.getItem(`locked_files_${currentUserId}`) || "{}");
             const errorElement = document.getElementById("lockModalError");
             const box = document.getElementById("lockModalBox");
@@ -1062,6 +1263,7 @@
                     closeFileLockModal();
                     fetchSupabaseFiles();
                 } catch (error) {
+                    hideLoading();
                     errorElement.innerText = error.message || "Unable to encrypt this file.";
                     console.error("File encryption failed:", error);
                     subtitleElement.innerText = "Try again or cancel";
@@ -1072,6 +1274,7 @@
                 const isLegacyLock = typeof lockRecord === "string";
 
                 if (!lockRecord || (isLegacyLock && pin !== lockRecord)) {
+                    hideLoading();
                     box.classList.add("animate-shake");
                     errorElement.innerText = "Incorrect PIN!";
                     isFileLockProcessing = false;
@@ -1148,6 +1351,7 @@
                     pendingUrl = null;
                     pendingDisplayName = null;
                 } catch (error) {
+                    hideLoading();
                     box.classList.add("animate-shake");
                     errorElement.innerText = error.name === "OperationError"
                         ? "Incorrect PIN. Please try again."
@@ -1180,42 +1384,61 @@
             event.stopPropagation();
             if(!confirm("Are you sure you want to delete this file?")) return;
 
+            const deleteButton = event.currentTarget;
             const filePath = `${currentUserId}/${fileName}`;
-            const { error } = await supabaseClient.storage
-                .from(BUCKET_NAME)
-                .remove([filePath]);
+            deleteButton.disabled = true;
+            deleteButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xs"></i>';
+            fileCount.innerText = "Deleting...";
+            try {
+                const { error } = await supabaseClient.storage
+                    .from(BUCKET_NAME)
+                    .remove([filePath]);
 
-            if (error) {
-                alert("Delete failed: " + error.message);
-            } else {
+                if (error) {
+                    fileCount.innerText = "Unable to delete file.";
+                    alert("Unable to delete file.");
+                    return;
+                }
                 const lockedFilesMap = JSON.parse(localStorage.getItem(`locked_files_${currentUserId}`) || "{}");
                 if (lockedFilesMap[fileName]) {
                     delete lockedFilesMap[fileName];
                     localStorage.setItem(`locked_files_${currentUserId}`, JSON.stringify(lockedFilesMap));
                 }
-                fetchSupabaseFiles();
+                await fetchSupabaseFiles();
+                fileCount.innerText = "File deleted.";
+            } finally {
+                deleteButton.disabled = false;
+                deleteButton.innerHTML = '<i class="fa-solid fa-trash text-xs"></i>';
             }
         }
 
         function closeImageModal() {
+            previewLoadToken++;
+            hideLoading();
             imageModal.classList.add("hidden");
             modalImage.src = "";
             releasePreviewObjectUrl();
         }
 
         function closePdfModal() {
+            previewLoadToken++;
+            hideLoading();
             pdfModal.classList.add("hidden");
             modalPdfFrame.src = "";
             releasePreviewObjectUrl();
         }
 
         function closeFileViewerModal() {
+            previewLoadToken++;
+            hideLoading();
             fileViewerModal.classList.add("hidden");
             modalFileFrame.src = "";
             releasePreviewObjectUrl();
         }
 
         function closeAudioPlayer() {
+            previewLoadToken++;
+            hideLoading();
             audioElement.pause();
             audioElement.src = "";
             audioPlayerBar.classList.add("hidden");
