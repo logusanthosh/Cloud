@@ -1242,7 +1242,7 @@
         async function processFileLockAction() {
             if (isFileLockProcessing) return;
             isFileLockProcessing = true;
-            showLoading("Unlocking file...");
+            showLoading("locking file...");
             const lockedFilesMap = JSON.parse(localStorage.getItem(`locked_files_${currentUserId}`) || "{}");
             const errorElement = document.getElementById("lockModalError");
             const box = document.getElementById("lockModalBox");
